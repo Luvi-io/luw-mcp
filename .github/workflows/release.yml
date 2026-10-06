@@ -13,6 +13,9 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      # Job-level so the registry step's `if` can see it (a step's own env isn't visible to its `if`).
+      MCP_REGISTRY_KEY: ${{ secrets.MCP_REGISTRY_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -44,8 +47,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Publish to the MCP Registry
-        env:
-          MCP_REGISTRY_KEY: ${{ secrets.MCP_REGISTRY_PRIVATE_KEY }}
         if: env.MCP_REGISTRY_KEY != ''
         run: |
           curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
