@@ -1,8 +1,5 @@
+export { VERSION } from "./version.js";
 export const SERVER_NAME = "luw";
-// Replaced at build time by scripts/build.mjs; the fallback is for tests/dev.
-export const VERSION: string = typeof __LUW_MCP_VERSION__ === "string" ? __LUW_MCP_VERSION__ : "0.0.0-dev";
-
-declare const __LUW_MCP_VERSION__: string | undefined;
 
 export const DEFAULT_BASE_URL = "https://api.luw.ai/v2";
 export const API_KEY_URL = "https://app.luw.ai/dashboard/api";

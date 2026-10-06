@@ -2,7 +2,7 @@ import { webcrypto } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { DOCS_URL, VERSION, type LuwConfig } from "./config.js";
-import { createLuwServer } from "./server.js";
+import { createLuwServer } from "./mcp-server.js";
 
 // Node 18 has no global Web Crypto; the SDK's web-standard transport calls crypto.randomUUID().
 if (!globalThis.crypto) (globalThis as { crypto?: unknown }).crypto = webcrypto;

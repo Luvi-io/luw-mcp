@@ -270,7 +270,7 @@ npx -y @luw-ai/mcp --http --port 8080 --host 0.0.0.0   # MCP at /mcp, health at 
 docker build -t luw-mcp . && docker run -p 8080:8080 luw-mcp
 ```
 
-It's stateless and holds no secrets. Each request brings its own key in `Authorization: Bearer …`, `X-Luw-Api-Key`, or `?api_key=`. A `Procfile` is included for Heroku. See [docs/maintainers.md](docs/maintainers.md) for deployment and release steps.
+It's stateless and holds no secrets. Each request brings its own key in `Authorization: Bearer …`, `X-Luw-Api-Key`, or `?api_key=`. It deploys to Vercel as-is (`vercel.json` is included), and a `Procfile` is included for Heroku. See [docs/maintainers.md](docs/maintainers.md) for deployment and release steps.
 
 ## Development
 

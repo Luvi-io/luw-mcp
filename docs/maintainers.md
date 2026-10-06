@@ -24,7 +24,15 @@ How the Luw.ai MCP server is shipped. Users can reach it four ways, and each one
 
 ## Deploying the hosted endpoint
 
-The server is stateless and holds no secrets. Every request carries the user's own key, so any container host works. Point `mcp.luw.ai` at it.
+The server is stateless and holds no secrets. Every request carries the user's own key, so any host works. Point `mcp.luw.ai` at it.
+
+**Vercel** (recommended; `vercel.json` and `api/mcp.ts` are included):
+
+1. Go to [vercel.com/new](https://vercel.com/new) → **Import** `Luvi-io/luw-mcp` → **Deploy**. Every setting comes from `vercel.json`, so nothing needs to be configured, and pushes to `main` redeploy automatically.
+2. Project → **Settings → Domains** → add `mcp.luw.ai`, then create the DNS record Vercel shows (`CNAME mcp → cname.vercel-dns.com`).
+3. Use a Pro team for the company project. Vercel's Hobby plan is for non-commercial use.
+
+Vercel limits to know about: request bodies up to 4.5 MB (so `data:` URI images must be smaller; URLs are unaffected) and 300 s per call (tool calls wait at most 50 s).
 
 **Heroku** (the `Procfile` is included; Heroku runs `npm run build` automatically):
 
@@ -55,7 +63,7 @@ Notes:
 
 ## Releasing
 
-1. Bump `version` in `package.json`, `server.json` (both `version` fields) and `manifest.json`. `npm test` fails if they disagree.
+1. Bump `version` in `package.json`, `server.json` (both `version` fields), `manifest.json` and `src/version.ts`. `npm test` fails if they disagree.
 2. Update `CHANGELOG.md`.
 3. `git tag v0.2.0 && git push --tags`
 

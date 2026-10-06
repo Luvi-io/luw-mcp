@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { API_KEY_URL, loadConfig, TOOLSETS, VERSION } from "./config.js";
 import { startHttpServer } from "./http.js";
-import { createLuwServer } from "./server.js";
+import { createLuwServer } from "./mcp-server.js";
 
 const HELP = `Luw.ai MCP server v${VERSION}
 

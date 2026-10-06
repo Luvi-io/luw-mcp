@@ -63,3 +63,17 @@ describe("hosted HTTP server", () => {
     expect(preflight.headers.get("access-control-allow-headers")).toMatch(/Authorization/);
   });
 });
+
+describe("Vercel function (api/mcp.ts)", () => {
+  it("serves health, info and MCP through the vercel.json routes", async () => {
+    const { default: vercel } = await import("../api/mcp.js");
+    const health = await vercel.fetch(new Request("https://mcp.test/api/mcp?route=health"));
+    expect(await health.json()).toMatchObject({ status: "ok" });
+    const info = await vercel.fetch(new Request("https://mcp.test/api/mcp?route=info"));
+    expect(await info.json()).toMatchObject({ mcp_endpoint: "https://mcp.test/mcp" });
+
+    const client = await connectHttp((r) => vercel.fetch(r), { Authorization: "Bearer k" }, "/api/mcp");
+    expect((await client.listTools()).tools.length).toBe(21);
+    await client.close();
+  });
+});

@@ -2,7 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { loadConfig, type LuwConfig } from "../src/config.js";
-import { createLuwServer } from "../src/server.js";
+import { createLuwServer } from "../src/mcp-server.js";
 
 export const API = "https://api.test/v2";
 

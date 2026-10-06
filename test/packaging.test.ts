@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
+import { VERSION } from "../src/version.js";
 import { connect, fakeLuw } from "./helpers.js";
 
 const read = async (path: string) => JSON.parse(await readFile(new URL(`../${path}`, import.meta.url), "utf8"));
@@ -12,6 +13,7 @@ describe("release metadata", () => {
     expect(server.packages[0].identifier).toBe(pkg.name);
     expect(server.name).toBe(pkg.mcpName);
     expect(manifest.version).toBe(pkg.version);
+    expect(VERSION).toBe(pkg.version);
     expect(server.description.length).toBeLessThanOrEqual(100);
   });
 
