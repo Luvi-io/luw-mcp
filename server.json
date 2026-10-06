@@ -1,0 +1,51 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "ai.luw/mcp",
+  "title": "Luw.ai",
+  "description": "AI interior, exterior and landscape design, photoreal rendering, image editing, video and 3D.",
+  "websiteUrl": "https://luw.ai",
+  "repository": {
+    "url": "https://github.com/Luvi-io/luw-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@luw-ai/mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "LUW_API_KEY",
+          "description": "Your Luw.ai API key from https://app.luw.ai/dashboard/api",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "LUW_OUTPUT_DIR",
+          "description": "Optional folder where generated files are also downloaded",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.luw.ai/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer followed by your Luw.ai API key from https://app.luw.ai/dashboard/api",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

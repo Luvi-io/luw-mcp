@@ -1,0 +1,61 @@
+{
+  "name": "@luw-ai/mcp",
+  "version": "0.1.0",
+  "description": "Official Luw.ai MCP server: AI interior, exterior, landscape, render, video and 3D design tools for Claude, Cursor, VS Code, Windsurf and any MCP client.",
+  "mcpName": "ai.luw/mcp",
+  "license": "MIT",
+  "author": "Luvi Technologies, Inc. <support@luvi.io> (https://luw.ai)",
+  "homepage": "https://github.com/Luvi-io/luw-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Luvi-io/luw-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Luvi-io/luw-mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "luw",
+    "luw.ai",
+    "interior-design",
+    "architecture",
+    "ai-rendering",
+    "claude",
+    "cursor"
+  ],
+  "type": "module",
+  "bin": {
+    "luw-mcp": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm test && npm run build",
+    "start": "node dist/cli.js",
+    "start:http": "node dist/cli.js --http",
+    "inspector": "npx -y @modelcontextprotocol/inspector node dist/cli.js",
+    "smoke": "node scripts/smoke.mjs",
+    "mcpb": "node scripts/pack-mcpb.mjs",
+    "links": "node scripts/install-links.mjs",
+    "prepublishOnly": "npm run check"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@types/node": "^18.19.130",
+    "esbuild": "^0.25.12",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7",
+    "zod": "^4.6.5"
+  }
+}

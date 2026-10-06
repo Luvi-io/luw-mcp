@@ -1,0 +1,81 @@
+{
+  "manifest_version": "0.3",
+  "name": "luw",
+  "display_name": "Luw.ai",
+  "version": "0.1.0",
+  "description": "AI interior, exterior & landscape design, photoreal renders, image editing, video and 3D — right inside Claude.",
+  "long_description": "The official Luw.ai extension. Redesign rooms and facades in any style, virtually stage empty rooms, turn sketches and 3D views into photorealistic renders, edit images with a sentence, swap materials, remove backgrounds or furniture, upscale, animate designs into cinematic videos, generate 3D models from photos, and ask ArchiGPT for expert architecture advice. Drop in local images — they are uploaded automatically — and see results right in the chat.",
+  "author": {
+    "name": "Luvi Technologies, Inc.",
+    "email": "support@luvi.io",
+    "url": "https://luw.ai"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Luvi-io/luw-mcp.git"
+  },
+  "homepage": "https://luw.ai",
+  "documentation": "https://github.com/Luvi-io/luw-mcp#readme",
+  "support": "https://github.com/Luvi-io/luw-mcp/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.mjs"],
+      "env": {
+        "LUW_API_KEY": "${user_config.api_key}",
+        "LUW_OUTPUT_DIR": "${user_config.output_dir}"
+      }
+    }
+  },
+  "user_config": {
+    "api_key": {
+      "type": "string",
+      "title": "Luw.ai API key",
+      "description": "Create one at https://app.luw.ai/dashboard/api",
+      "sensitive": true,
+      "required": true
+    },
+    "output_dir": {
+      "type": "directory",
+      "title": "Save results to (optional)",
+      "description": "Generated images, videos and 3D models are also downloaded into this folder.",
+      "required": false
+    }
+  },
+  "tools": [
+    { "name": "luw_interior_design", "description": "Redesign or virtually stage an interior photo in any style" },
+    { "name": "luw_exterior_design", "description": "Redesign a building exterior or facade" },
+    { "name": "luw_sketch_to_render", "description": "Turn a sketch or drawing into a photorealistic render" },
+    { "name": "luw_render", "description": "Turn a 3D/CAD view or clay render into a photorealistic render" },
+    { "name": "luw_edit_image", "description": "Edit an image with a plain-language instruction" },
+    { "name": "luw_magic_wand", "description": "Replace, remove or re-surface a masked area" },
+    { "name": "luw_landscape_design", "description": "Design gardens and outdoor areas for the local climate" },
+    { "name": "luw_image_tools", "description": "Upscale, expand, remove furniture, vectorize" },
+    { "name": "luw_background", "description": "Remove or replace an image background" },
+    { "name": "luw_segment", "description": "Detect objects and return masks" },
+    { "name": "luw_generate_image", "description": "Text to image or SVG (Fluw AI)" },
+    { "name": "luw_generate_pattern", "description": "Seamless tileable patterns and textures" },
+    { "name": "luw_generate_video", "description": "Animate a design into a cinematic video" },
+    { "name": "luw_image_to_3d", "description": "Generate a 3D model (GLB) from photos" },
+    { "name": "luw_archigpt", "description": "Ask ArchiGPT, an AI architect" },
+    { "name": "luw_get_result", "description": "Collect a long-running generation" },
+    { "name": "luw_upload_file", "description": "Upload a file to Luw.ai storage" },
+    { "name": "luw_list_options", "description": "Styles, room types, camera motions, materials" },
+    { "name": "luw_run_model", "description": "Call any Luw.ai model with raw parameters" },
+    { "name": "luw_personas", "description": "Manage personas and their training images" },
+    { "name": "luw_projects", "description": "Manage projects, folders and media" }
+  ],
+  "tools_generated": false,
+  "keywords": ["interior design", "architecture", "rendering", "real estate", "virtual staging", "image editing", "3d", "video"],
+  "license": "MIT",
+  "privacy_policies": ["https://luw.ai/privacy/"],
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}
