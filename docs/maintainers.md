@@ -12,7 +12,7 @@ How the Luw.ai MCP server is shipped. Users can reach it four ways, and each one
 ## One-time setup
 
 1. **GitHub**: push this repo to `github.com/Luvi-io/luw-mcp`. README badges and links assume that path. If you use another path, search and replace `Luvi-io/luw-mcp`.
-2. **npm**: create the `luw-ai` org on npmjs.com (free for public packages). Create an *Automation* token and save it as the `NPM_TOKEN` repository secret.
+2. **npm**: the `luw-ai` org exists. Releases use [Trusted Publishing](https://docs.npmjs.com/trusted-publishers), so there is no npm token. On npmjs.com → `@luw-ai/mcp` → **Settings → Trusted Publisher → GitHub Actions**, the publisher is organization `Luvi-io`, repository `luw-mcp`, workflow `release.yml`. Under **Publishing access**, set "Require two-factor authentication and disallow tokens".
 3. **MCP Registry** (optional): uses DNS auth for the `ai.luw/*` namespace.
    ```bash
    # macOS: use Homebrew OpenSSL 3; the system LibreSSL lacks Ed25519.
@@ -67,7 +67,7 @@ Notes:
 2. Update `CHANGELOG.md`.
 3. `git tag v0.2.0 && git push --tags`
 
-The release workflow checks that the tag matches `package.json`, runs typecheck, tests and build, publishes to npm with provenance, builds `luw.mcpb` and attaches it to a GitHub release, and publishes `server.json` to the MCP Registry when the secret is set.
+The release workflow checks that the tag matches `package.json`, runs typecheck, tests and build, publishes to npm through Trusted Publishing (with provenance), builds `luw.mcpb` and attaches it to a GitHub release, and publishes `server.json` to the MCP Registry when the secret is set.
 
 ## Adding a new Luw.ai model
 
