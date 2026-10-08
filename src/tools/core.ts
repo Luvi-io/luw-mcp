@@ -43,11 +43,21 @@ export function registerCoreTools(server: Server, deps: Deps) {
     {
       title: "Upload a file to Luw.ai",
       description:
-        "Upload an image, video or 3D file to Luw.ai storage and get a URL usable by every Luw.ai tool. " +
-        "Rarely needed: all tools already accept local paths and data: URIs and upload them automatically. " +
-        "Useful to get a shareable URL, to re-host an image from a site Luw.ai can't reach, or to store a file permanently.",
+        deps.config.mode === "remote"
+          ? "Store an image, video or 3D file sent as a data: URI in Luw.ai storage and get a URL usable by every Luw.ai tool. " +
+            "Rarely needed: all tools already accept https:// URLs and data: URIs directly. This hosted server can't read files from the user's computer or copy URLs."
+          : "Upload an image, video or 3D file to Luw.ai storage and get a URL usable by every Luw.ai tool. " +
+            "Rarely needed: all tools already accept local paths and data: URIs and upload them automatically. " +
+            "Useful to get a shareable URL, to re-host an image from a site Luw.ai can't reach, or to store a file permanently.",
       inputSchema: {
-        source: z.string().min(1).describe("Local file path, file:// URL, data: URI, or an https:// URL to copy into Luw.ai storage."),
+        source: z
+          .string()
+          .min(1)
+          .describe(
+            deps.config.mode === "remote"
+              ? "data: URI of the file."
+              : "Local file path, file:// URL, data: URI, or an https:// URL to copy into Luw.ai storage.",
+          ),
         persistent: z
           .boolean()
           .optional()

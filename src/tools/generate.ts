@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { Params } from "../client.js";
 import { handler, type Deps, type Server, type ToolContext } from "../context.js";
 import { InputError } from "../files.js";
-import { formatOutcome, runJobs } from "../jobs.js";
+import { formatOutcome, runJobs, type FormatOptions } from "../jobs.js";
 
 // ---------------------------------------------------------------------------
 // Shared parameter schemas. Names are snake_case and friendlier than the raw API
@@ -18,7 +18,7 @@ const f = {
     .array(z.string())
     .max(5)
     .optional()
-    .describe('Design style names, e.g. ["Japandi"]. Case-sensitive; see luw_list_options.'),
+    .describe('Design style names, e.g. ["Scandinavian"]; for Japandi use ["Japanese Design", "Scandinavian"]. Case-sensitive; see luw_list_options.'),
   referenceImages: z
     .array(imageInput("Reference image"))
     .max(6)
@@ -95,9 +95,9 @@ function expand(params: Params, variations = 1): Params[] {
   );
 }
 
-async function generate(ctx: ToolContext, label: string, params: Params, variations?: number, maskLabels?: string[]) {
+async function generate(ctx: ToolContext, label: string, params: Params, variations?: number, format?: FormatOptions) {
   const outcome = await runJobs(ctx, label, expand(params, variations));
-  return formatOutcome(ctx, outcome, { maskLabels });
+  return formatOutcome(ctx, outcome, format);
 }
 
 const GENERATE = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true } as const;
@@ -443,7 +443,10 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     handler(deps, async (a, ctx) => {
       const image = await ctx.files.resolve(a.image, { signal: ctx.signal });
       const params = a.prompt?.trim() ? { model: "segmentprompt", image, prompt: a.prompt } : { model: "segment", image };
-      return generate(ctx, "Segment AI", params, 1, a.labels);
+      const emptyHint = a.prompt?.trim()
+        ? `Nothing matching "${a.prompt.trim()}" was found. Try another word (e.g. "carpet" for a floor), or omit prompt to get every object's mask and pick with labels.`
+        : "No objects were detected in this image.";
+      return generate(ctx, "Segment AI", params, 1, { maskLabels: a.labels, emptyHint });
     }),
   );
 

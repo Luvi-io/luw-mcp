@@ -81,6 +81,8 @@ export async function runJobs(ctx: ToolContext, label: string, paramSets: Params
 export interface FormatOptions {
   /** For segmentation: only keep masks whose label matches one of these (case-insensitive substring). */
   maskLabels?: string[];
+  /** Added when a job finishes with no output at all, e.g. what to try instead. */
+  emptyHint?: string;
 }
 
 /** Turns an Outcome into a tool result: readable summary, structured data, inline previews, saved files. */
@@ -108,14 +110,20 @@ export async function formatOutcome(ctx: ToolContext, outcome: Outcome, options:
   const lines: string[] = [];
   const seconds = (outcome.elapsedMs / 1000).toFixed(1);
 
-  if (completed.length) {
+  // Luw.ai can finish a job and return nothing (e.g. Segment AI found no match); say so instead of a bare "finished".
+  const raw = normalizeAll(completed);
+  const empty = completed.length > 0 && !pending.length && !failed.length && !raw.urls.length && !raw.masks.length && !raw.texts.length && raw.other === undefined;
+
+  if (empty) {
+    lines.push(`${label} finished in ${seconds}s but returned no output.${options.emptyHint ? ` ${options.emptyHint}` : ""}`);
+  } else if (completed.length) {
     const count = urls.length + masks.length;
     lines.push(`${label} finished in ${seconds}s${count > 1 ? ` — ${count} outputs` : ""}.`);
     urls.forEach((url, i) => lines.push(urls.length > 1 ? `${i + 1}. ${url}` : url));
     for (const mask of masks) {
       lines.push(mask.url ? `- ${mask.label}: ${mask.url}` : `- ${mask.label}: (mask upload failed: ${mask.error})`);
     }
-    if (maskSources.length === 0 && options.maskLabels?.length && normalizeAll(completed).masks.length) {
+    if (maskSources.length === 0 && options.maskLabels?.length && raw.masks.length) {
       lines.push(`No masks matched ${options.maskLabels.join(", ")}.`);
     }
     lines.push(...texts);
@@ -143,7 +151,7 @@ export async function formatOutcome(ctx: ToolContext, outcome: Outcome, options:
   if (files.length) lines.push("", `Saved to: ${files.join(", ")}`);
 
   content.unshift({ type: "text", text: lines.join("\n") });
-  const status = failed.length && !completed.length && !pending.length ? "failed" : pending.length ? "processing" : failed.length ? "partial" : "completed";
+  const status = empty ? "empty" : failed.length && !completed.length && !pending.length ? "failed" : pending.length ? "processing" : failed.length ? "partial" : "completed";
   return {
     content,
     structuredContent: {
@@ -156,7 +164,7 @@ export async function formatOutcome(ctx: ToolContext, outcome: Outcome, options:
       ...(files.length ? { files } : {}),
       elapsed_seconds: Number(seconds),
     },
-    isError: status === "failed",
+    isError: status === "failed" || status === "empty",
   };
 }
 

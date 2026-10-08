@@ -13,7 +13,7 @@ export function registerPrompts(server: Server) {
     {
       title: "Redesign a room",
       description: "Restyle a room photo in a chosen design style (2 variations).",
-      argsSchema: { image: imageArg, style: z.string().optional().describe('e.g. "Japandi", "Mid-Century Modern"') },
+      argsSchema: { image: imageArg, style: z.string().optional().describe('e.g. "Scandinavian", "Mid-Century Modern"') },
     },
     ({ image, style }) =>
       userPrompt(

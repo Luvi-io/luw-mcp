@@ -354,6 +354,23 @@ describe("outputs", () => {
     expect(textOf(result)).toMatch(/- wall: https/);
   });
 
+  it("says so when a job finishes with no output, and what to try for a segment prompt", async () => {
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: [] }));
+    const result = await (await connect(luw.fetch)).call("luw_segment", { image: "https://e.com/r.jpg", prompt: "floor" });
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as any).status).toBe("empty");
+    expect(textOf(result)).toMatch(/Segment AI finished in .* but returned no output\. Nothing matching "floor" was found/);
+  });
+
+  it("describes luw_upload_file for what each mode can do", async () => {
+    const describe = async (mode: "local" | "remote") =>
+      (await (await connect(fakeLuw().fetch, { mode })).client.listTools()).tools.find((t) => t.name === "luw_upload_file")!;
+    const hosted = await describe("remote");
+    expect(hosted.description).toMatch(/data: URI/);
+    expect(JSON.stringify(hosted.inputSchema)).not.toMatch(/https:\/\/ URL|Local file path/);
+    expect(JSON.stringify((await describe("local")).inputSchema)).toMatch(/Local file path/);
+  });
+
   it("embeds result images and saves them to LUW_OUTPUT_DIR", async () => {
     const dir = await mkdtemp(join(tmpdir(), "luw-out-"));
     const luw = fakeLuw()
