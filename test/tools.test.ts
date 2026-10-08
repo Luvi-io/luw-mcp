@@ -17,6 +17,27 @@ describe("tool registry", () => {
     expect(names.every((n) => /^luw_[a-z0-9_]+$/.test(n))).toBe(true);
   });
 
+  it("names each Luw.ai app in a tool description, so models map what users say to the right tool", async () => {
+    // Models see descriptions, not titles: "use Magic Prompt" must land on luw_edit_image.
+    const { client } = await connect(fakeLuw().fetch);
+    const tools = (await client.listTools()).tools;
+    const toolFor = (app: string) => tools.filter((t) => t.description?.includes(app)).map((t) => t.name);
+    expect(toolFor("Interior AI")).toEqual(["luw_interior_design"]);
+    expect(toolFor("Exterior AI")).toEqual(["luw_exterior_design"]);
+    expect(toolFor("Sketch AI")).toEqual(["luw_sketch_to_render"]);
+    expect(toolFor("Render AI")).toEqual(["luw_render"]);
+    expect(toolFor("Magic Prompt AI")).toEqual(["luw_edit_image"]);
+    expect(toolFor("Magic Wand AI")).toEqual(["luw_magic_wand"]);
+    expect(toolFor("Landscape AI")).toEqual(["luw_landscape_design"]);
+    expect(toolFor("Photo Enhance AI")).toEqual(["luw_image_tools"]);
+    expect(toolFor("Change Background")).toEqual(["luw_background"]);
+    expect(toolFor("Fluw AI")).toEqual(["luw_generate_image"]);
+    expect(toolFor("Pattern AI")).toEqual(["luw_generate_pattern"]);
+    expect(toolFor("Video AI")).toEqual(["luw_generate_video"]);
+    expect(toolFor("3DGen AI")).toEqual(["luw_image_to_3d"]);
+    expect(toolFor("ArchiGPT")).toEqual(["luw_archigpt"]);
+  });
+
   it("filters by LUW_TOOLSETS", async () => {
     const { client } = await connect(fakeLuw().fetch, {}, { LUW_TOOLSETS: "archigpt,team" });
     const names = (await client.listTools()).tools.map((t) => t.name);

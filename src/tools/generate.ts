@@ -108,7 +108,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Interior design (Interior AI)",
       description:
-        "Redesign an interior photo — home, office, shop, hotel — in any style while keeping the room's architecture. " +
+        "Luw.ai Interior AI: redesign an interior photo — home, office, shop, hotel — in any style while keeping the room's architecture. " +
         "Restyles furniture, materials, colors and lighting. Set empty_room=true to furnish an empty room or turn it into another room type (virtual staging). " +
         "Costs 1 credit per variation.",
       inputSchema: {
@@ -157,7 +157,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Exterior design (Exterior AI)",
       description:
-        "Redesign a building exterior or facade photo — houses, villas, apartments, commercial buildings — in a new architectural style, " +
+        "Luw.ai Exterior AI: redesign a building exterior or facade photo — houses, villas, apartments, commercial buildings — in a new architectural style, " +
         "with new materials, colors and landscaping, keeping the structure. Costs 1 credit per variation.",
       inputSchema: {
         image: imageInput("Photo of the building"),
@@ -199,7 +199,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Sketch to render (Sketch AI)",
       description:
-        "Turn a hand sketch, line drawing, floor-plan perspective or rough draft into a photorealistic render. Costs 1 credit per variation.",
+        "Luw.ai Sketch AI: turn a hand sketch, line drawing, floor-plan perspective or rough draft into a photorealistic render. Costs 1 credit per variation.",
       inputSchema: {
         image: imageInput("The sketch or drawing"),
         prompt: f.prompt,
@@ -230,7 +230,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Photorealistic render (Render AI)",
       description:
-        "Turn a 3D model view, CAD/BIM screenshot, clay render or basic visualization into a photorealistic architectural render. Costs 1 credit per variation.",
+        "Luw.ai Render AI: turn a 3D model view, CAD/BIM screenshot, clay render or basic visualization into a photorealistic architectural render. Costs 1 credit per variation.",
       inputSchema: {
         image: imageInput("The 3D view or base render"),
         prompt: f.prompt,
@@ -256,7 +256,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Edit image with a prompt (Magic Prompt AI)",
       description:
-        "Edit any image with a plain-language instruction: \"make the sofa green velvet\", \"add a pendant lamp over the table\", \"turn it into a night scene\". " +
+        "Luw.ai Magic Prompt AI: edit any image with a plain-language instruction: \"make the sofa green velvet\", \"add a pendant lamp over the table\", \"turn it into a night scene\". " +
         "Pass products, materials or a mood board as reference_images to place or apply them. For edits restricted to an exact area, use luw_magic_wand. Costs 1 credit per variation.",
       inputSchema: {
         image: imageInput("Image to edit"),
@@ -289,7 +289,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Masked edit: replace, remove, change material (Magic Wand AI)",
       description:
-        "Change only a masked area of an image. Give a prompt to add/replace what's there, remove=true to erase it, or material_image to re-surface it " +
+        "Luw.ai Magic Wand AI: change only a masked area of an image. Give a prompt to add/replace what's there, remove=true to erase it, or material_image to re-surface it " +
         "(e.g. new flooring or wall tiles). The mask is a black-and-white image the same size as the input; white marks the area to change. " +
         "Get masks from luw_segment. Costs 1 credit.",
       inputSchema: {
@@ -335,7 +335,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Landscape & garden design (Landscape AI)",
       description:
-        "Design a garden, yard or outdoor area inside a masked region of a photo, with plants chosen for the location's climate and sun exposure. Costs 1 credit.",
+        "Luw.ai Landscape AI: design a garden, yard or outdoor area inside a masked region of a photo, with plants chosen for the location's climate and sun exposure. Costs 1 credit.",
       inputSchema: {
         image: imageInput("Photo of the outdoor area"),
         mask_image: imageInput("Black/white mask, white = area to landscape"),
@@ -369,7 +369,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Upscale, expand, empty a room, vectorize",
       description:
-        "One-step image utilities, 1 credit each:\n" +
+        "Luw.ai image utilities, 1 credit each:\n" +
         "- upscale: enhance quality and enlarge 2x/4x/8x (Photo Enhance AI)\n" +
         "- expand: outpaint a tightly cropped architectural photo to a wider view (Expand AI)\n" +
         "- remove_furniture: empty a furnished room, keeping walls, floor and windows (Remove Furniture AI)\n" +
@@ -402,7 +402,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Remove or replace background",
       description:
-        "Cut out a product/object from its background (transparent PNG) — or, with a prompt, place it in a new generated scene for marketing shots " +
+        "Luw.ai Change Background: cut out a product/object from its background (transparent PNG) — or, with a prompt, place it in a new generated scene for marketing shots " +
         '("on a marble kitchen counter, morning light"). Omit prompt to just remove the background. Costs 1 credit.',
       inputSchema: {
         image: imageInput("Product or object photo"),
@@ -427,7 +427,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Segment objects into masks (Segment AI)",
       description:
-        "Detect objects in a photo and return black-and-white masks as image URLs — every object (wall, floor, sofa, …) or only what you describe in prompt. " +
+        "Luw.ai Segment AI: detect objects in a photo and return black-and-white masks as image URLs — every object (wall, floor, sofa, …) or only what you describe in prompt. " +
         "Feed a mask URL into luw_magic_wand or luw_landscape_design to edit exactly that area. Costs 1 credit.",
       inputSchema: {
         image: imageInput("Photo to segment"),
@@ -452,7 +452,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Text to image (Fluw AI)",
       description:
-        "Generate a photorealistic image or illustration from a text prompt (optionally guided by an input image) — concept art, interiors, products, marketing visuals. " +
+        "Luw.ai Fluw AI: generate a photorealistic image or illustration from a text prompt (optionally guided by an input image) — concept art, interiors, products, marketing visuals. " +
         'Set format="svg" for a vector illustration (Fluw Vector AI). Costs 2 credits per image.',
       inputSchema: {
         prompt: z.string().min(1).max(4000).describe("What to generate."),
@@ -493,7 +493,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Seamless pattern / texture (Pattern AI)",
       description:
-        "Generate a seamless, tileable pattern or texture — tiles, wallpaper, fabric, terrazzo, wood, stone — ready to repeat across a surface. Costs 1 credit.",
+        "Luw.ai Pattern AI: generate a seamless, tileable pattern or texture — tiles, wallpaper, fabric, terrazzo, wood, stone — ready to repeat across a surface. Costs 1 credit.",
       inputSchema: {
         prompt: z.string().min(1).max(4000).describe('The pattern, e.g. "blue and white Moroccan zellige tiles".'),
         image: imageInput("Optional reference image").optional(),
@@ -526,7 +526,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Image to cinematic video (Video AI)",
       description:
-        "Animate a design image into a short cinematic video — fly-throughs, dolly moves, drone shots, reveals. " +
+        "Luw.ai Video AI (Motion): animate a design image into a short cinematic video — fly-throughs, dolly moves, drone shots, reveals. " +
         "Camera motions: A Forward Dolly, Flythrough Cinematic, Return to Empty Room, Lighting and Color Details, Drone flying to center, Dramatic Zoom Out, " +
         "Reverse Zoom In, Slow Pull Back, Reveal Zoom, Ground to Sky Tilt, Side Tracking Zoom, Aerial Descent. " +
         "Takes a few minutes — expect a processing_url to collect with luw_get_result. Costs 10 credits (aria) or 20 (symphony).",
@@ -555,7 +555,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Image to 3D model (3DGen AI)",
       description:
-        "Generate a textured 3D model (GLB) from a photo of an object — furniture, decor, products. Add up to 3 photos from other angles for better accuracy. " +
+        "Luw.ai 3DGen AI: generate a textured 3D model (GLB) from a photo of an object — furniture, decor, products. Add up to 3 photos from other angles for better accuracy. " +
         "For text-to-3D, first make an image with luw_generate_image. Costs 3 credits (aria) or 8 (symphony).",
       inputSchema: {
         image: imageInput("Photo of the object"),
