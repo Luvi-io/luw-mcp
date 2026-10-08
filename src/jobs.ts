@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { errorMessage, interpretJob, isRecord, type JobState, type Params } from "./client.js";
+import { errorMessage, interpretJob, isRecord, LuwApiError, type JobState, type Params } from "./client.js";
 import { extensionForContentType } from "./files.js";
 import type { ToolContext } from "./context.js";
 
@@ -64,7 +64,8 @@ export async function runJobs(ctx: ToolContext, label: string, paramSets: Params
           outcome.pending.push({ index, processingUrl: state.processingUrl, percent: state.percent });
         }
       } catch (error) {
-        if (ctx.signal.aborted) throw error;
+        // A rejected key fails every variation alike: fail the whole call, so the client can ask to sign in again.
+        if (ctx.signal.aborted || (error instanceof LuwApiError && error.rejectedKey)) throw error;
         outcome.failed.push({ index, error: errorMessage(error) });
       }
     }),

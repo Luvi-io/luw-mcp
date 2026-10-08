@@ -21,9 +21,9 @@
 </p>
 
 <p align="center">
-  <a href="https://cursor.com/en-US/install-mcp?name=luw&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBsdXctYWkvbWNwIl0sImVudiI6eyJMVVdfQVBJX0tFWSI6IllPVVJfTFVXX0FQSV9LRVkifX0%3D"><img alt="Add to Cursor" src="https://cursor.com/deeplink/mcp-install-dark.svg" height="32"></a>
+  <a href="https://cursor.com/en-US/install-mcp?name=luw&config=eyJ1cmwiOiJodHRwczovL21jcC5sdXcuYWkvbWNwIn0%3D"><img alt="Add to Cursor" src="https://cursor.com/deeplink/mcp-install-dark.svg" height="32"></a>
   &nbsp;
-  <a href="https://vscode.dev/redirect/mcp/install?name=luw&inputs=%5B%7B%22type%22%3A%22promptString%22%2C%22id%22%3A%22luw_api_key%22%2C%22description%22%3A%22Luw.ai%20API%20key%20(https%3A%2F%2Fapp.luw.ai%2Fdashboard%2Fapi)%22%2C%22password%22%3Atrue%7D%5D&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40luw-ai%2Fmcp%22%5D%2C%22env%22%3A%7B%22LUW_API_KEY%22%3A%22%24%7Binput%3Aluw_api_key%7D%22%7D%7D"><img alt="Install in VS Code" src="https://img.shields.io/badge/VS_Code-Install_Luw.ai-0098FF?style=for-the-badge" height="32"></a>
+  <a href="https://vscode.dev/redirect/mcp/install?name=luw&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fmcp.luw.ai%2Fmcp%22%7D"><img alt="Install in VS Code" src="https://img.shields.io/badge/VS_Code-Install_Luw.ai-0098FF?style=for-the-badge" height="32"></a>
   &nbsp;
   <a href="https://github.com/Luvi-io/luw-mcp/releases/latest/download/luw.mcpb"><img alt="Add to Claude Desktop" src="https://img.shields.io/badge/Claude_Desktop-Install_Luw.ai-D97757?style=for-the-badge&logo=claude&logoColor=white" height="32"></a>
   &nbsp;
@@ -41,11 +41,94 @@ Claude:  ⟶ luw_edit_image ⟶ luw_generate_video   ✓
 
 ## Quick start
 
-**1. Get an API key** at [app.luw.ai/dashboard/api](https://app.luw.ai/dashboard/api). New accounts get free credits.
-
-**2. Add Luw.ai to your client.** Pick one:
+**Add `https://mcp.luw.ai/mcp` to your client and sign in to Luw.ai.** Nothing to install, no key to copy: signing in creates one for you. New accounts get free credits. To disconnect, delete that key on the [API page](https://app.luw.ai/dashboard/api).
 
 <details open>
+<summary><b>Claude (claude.ai, Claude Desktop, mobile)</b></summary>
+
+*Settings → Connectors → Add custom connector*, paste `https://mcp.luw.ai/mcp`, then **Connect** and sign in to Luw.ai.
+</details>
+
+<details open>
+<summary><b>Claude Code</b></summary>
+
+```bash
+claude mcp add --transport http luw https://mcp.luw.ai/mcp --scope user
+```
+
+Then type `/mcp`, pick **luw** and sign in.
+</details>
+
+<details>
+<summary><b>ChatGPT</b></summary>
+
+*Settings → Apps & Connectors → Advanced settings*, turn on **Developer mode**, then **Create**: URL `https://mcp.luw.ai/mcp`, authentication **OAuth**, and sign in.
+</details>
+
+<details>
+<summary><b>Cursor</b></summary>
+
+Click **Add to Cursor** above, or add to `~/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "luw": { "url": "https://mcp.luw.ai/mcp" }
+  }
+}
+```
+
+Cursor shows **Needs login** next to luw; click it to sign in.
+</details>
+
+<details>
+<summary><b>VS Code (Copilot)</b></summary>
+
+Click **Install in VS Code** above, or add to `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "luw": { "type": "http", "url": "https://mcp.luw.ai/mcp" }
+  }
+}
+```
+
+VS Code asks you to sign in the first time a tool runs.
+</details>
+
+<details>
+<summary><b>Any other client with remote MCP support</b></summary>
+
+| | |
+|---|---|
+| URL | `https://mcp.luw.ai/mcp` |
+| Transport | Streamable HTTP |
+| Auth | Sign in (MCP OAuth), or header `Authorization: Bearer YOUR_LUW_API_KEY` |
+
+For a client that can't sign in, create a key at [app.luw.ai/dashboard/api](https://app.luw.ai/dashboard/api) and send it as a header:
+
+```json
+{
+  "mcpServers": {
+    "luw": {
+      "url": "https://mcp.luw.ai/mcp",
+      "headers": { "Authorization": "Bearer YOUR_LUW_API_KEY" }
+    }
+  }
+}
+```
+
+If it can neither sign in nor send headers, use `https://mcp.luw.ai/mcp?api_key=YOUR_LUW_API_KEY`. Anyone who has that URL can spend your credits, so keep it private.
+</details>
+
+The hosted server is stateless and stores nothing; your key goes straight to the Luw.ai API on each request. It can't read files from your computer, so give it image URLs, or use the local setup below.
+
+### Local: work with files on your computer
+
+The local server runs on your machine with `npx`, so it can read paths like `~/Desktop/room.jpg`. It needs [Node.js](https://nodejs.org) 18+ and an API key from [app.luw.ai/dashboard/api](https://app.luw.ai/dashboard/api).
+
+<details>
 <summary><b>Claude Code</b></summary>
 
 ```bash
@@ -58,18 +141,12 @@ Or install it as a plugin. Claude Code asks for your key and keeps it in secure 
 claude plugin marketplace add Luvi-io/luw-mcp
 claude plugin install luw@luw-ai
 ```
-
-No-install alternative (hosted server):
-
-```bash
-claude mcp add --transport http luw https://mcp.luw.ai/mcp --header "Authorization: Bearer YOUR_LUW_API_KEY"
-```
 </details>
 
-<details open>
+<details>
 <summary><b>Claude Desktop</b></summary>
 
-**One click:** download [**luw.mcpb**](https://github.com/Luvi-io/luw-mcp/releases/latest/download/luw.mcpb), double-click it, paste your API key. Nothing else to install.
+**One click:** download [**luw.mcpb**](https://github.com/Luvi-io/luw-mcp/releases/latest/download/luw.mcpb), double-click it, paste your API key. No Node.js needed.
 
 Or add this to `claude_desktop_config.json` (*Settings → Developer → Edit Config*):
 
@@ -89,9 +166,7 @@ Or add this to `claude_desktop_config.json` (*Settings → Developer → Edit Co
 <details>
 <summary><b>Cursor</b></summary>
 
-Click **Add to Cursor** above and replace `YOUR_LUW_API_KEY`. To use the hosted server instead (no Node.js needed), [add it to Cursor with this link](https://cursor.com/en-US/install-mcp?name=luw&config=eyJ1cmwiOiJodHRwczovL21jcC5sdXcuYWkvbWNwIiwiaGVhZGVycyI6eyJBdXRob3JpemF0aW9uIjoiQmVhcmVyIFlPVVJfTFVXX0FQSV9LRVkifX0%3D).
-
-Or add to `~/.cursor/mcp.json`:
+Add to `~/.cursor/mcp.json`:
 
 ```json
 {
@@ -109,7 +184,7 @@ Or add to `~/.cursor/mcp.json`:
 <details>
 <summary><b>VS Code (Copilot)</b></summary>
 
-Click **Install in VS Code** above. VS Code asks for your key and keeps it in its secret storage. Or add to `.vscode/mcp.json`:
+Add to `.vscode/mcp.json`. VS Code asks for your key and keeps it in its secret storage:
 
 ```json
 {
@@ -188,32 +263,7 @@ Gemini CLI asks for your key and keeps it in the system keychain. Or add to `~/.
 Click **Add to Kiro** above, confirm, then replace `YOUR_LUW_API_KEY` in Kiro's MCP config.
 </details>
 
-<details>
-<summary><b>Any client with remote MCP support (hosted, nothing to install)</b></summary>
-
-| | |
-|---|---|
-| URL | `https://mcp.luw.ai/mcp` |
-| Transport | Streamable HTTP |
-| Auth header | `Authorization: Bearer YOUR_LUW_API_KEY` |
-
-```json
-{
-  "mcpServers": {
-    "luw": {
-      "url": "https://mcp.luw.ai/mcp",
-      "headers": { "Authorization": "Bearer YOUR_LUW_API_KEY" }
-    }
-  }
-}
-```
-
-If your client only accepts a URL and can't send headers (for example ChatGPT connectors), use `https://mcp.luw.ai/mcp?api_key=YOUR_LUW_API_KEY`. Anyone who has that URL can spend your credits, so keep it private.
-
-The hosted server is stateless and stores nothing. Your key goes straight to the Luw.ai API on each request. It can't read files from your computer, so pass image URLs, or use the local `npx` setup to work with local files.
-</details>
-
-Windows: if `npx` isn't found, use `"command": "cmd", "args": ["/c", "npx", "-y", "@luw-ai/mcp"]`. Requires [Node.js](https://nodejs.org) 18 or later. The Claude Desktop extension bundles everything it needs.
+Windows: if `npx` isn't found, use `"command": "cmd", "args": ["/c", "npx", "-y", "@luw-ai/mcp"]`.
 
 ## What you can ask
 
@@ -291,7 +341,7 @@ npx -y @luw-ai/mcp --http --port 8080 --host 0.0.0.0   # MCP at /mcp, health at 
 docker build -t luw-mcp . && docker run -p 8080:8080 luw-mcp
 ```
 
-It's stateless and holds no secrets. Each request brings its own key in `Authorization: Bearer …`, `X-Luw-Api-Key`, or `?api_key=`. It deploys to Vercel as-is (`vercel.json` is included), and a `Procfile` is included for Heroku. See [docs/maintainers.md](docs/maintainers.md) for deployment and release steps.
+It's stateless. Each request brings its own key in `Authorization: Bearer …`, `X-Luw-Api-Key`, or `?api_key=`. Set `LUW_MCP_OAUTH_SECRET` to also let clients sign in to Luw.ai instead (OAuth); the sign-in hands the client an ordinary API key. It deploys to Vercel as-is (`vercel.json` is included), and a `Procfile` is included for Heroku. See [docs/maintainers.md](docs/maintainers.md) for deployment and release steps.
 
 ## Development
 

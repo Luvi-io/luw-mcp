@@ -48,8 +48,8 @@
       "headers": [
         {
           "name": "Authorization",
-          "description": "Bearer followed by your Luw.ai API key from https://app.luw.ai/dashboard/api",
-          "isRequired": true,
+          "description": "Optional: Bearer followed by a Luw.ai API key. Clients with MCP OAuth sign in to Luw.ai instead.",
+          "isRequired": false,
           "isSecret": true
         }
       ]

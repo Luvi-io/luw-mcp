@@ -6,7 +6,7 @@ How the Luw.ai MCP server is shipped. Users can reach it six ways, and each one 
 |---|---|---|
 | npm `@luw-ai/mcp` | `npx -y @luw-ai/mcp` in any client | `release.yml` publishes on tag |
 | Claude Desktop extension | Double-click `luw.mcpb` | `release.yml` attaches it to the GitHub release |
-| Hosted endpoint `https://mcp.luw.ai/mcp` | Paste a URL plus a header | Deploy this repo (Docker or Heroku) |
+| Hosted endpoint `https://mcp.luw.ai/mcp` | Paste the URL and sign in to Luw.ai (or send a key header) | Deploy this repo (Docker or Heroku) |
 | MCP Registry `ai.luw/mcp` | Found in registry-backed clients and directories | `release.yml` (optional step) |
 | Gemini CLI extension | `gemini extensions install https://github.com/Luvi-io/luw-mcp` | `gemini-extension.json` at the repo root; the gallery at geminicli.com crawls tagged repos with the `gemini-cli-extension` topic daily |
 | Claude Code plugin | `claude plugin marketplace add Luvi-io/luw-mcp`, then `claude plugin install luw@luw-ai` | `.claude-plugin/marketplace.json` lists `plugins/luw/`, read straight from `main` |
@@ -27,11 +27,15 @@ How the Luw.ai MCP server is shipped. Users can reach it six ways, and each one 
 
 ## Deploying the hosted endpoint
 
-The server is stateless and holds no secrets. Every request carries the user's own key, so any host works. Point `mcp.luw.ai` at it.
+The server is stateless. Every request carries the user's own key, so any host works. Point `mcp.luw.ai` at it.
+
+**Sign in with Luw.ai (OAuth).** Set `LUW_MCP_OAUTH_SECRET` to a random string of 32+ characters (`openssl rand -base64 48`). Clients that connect without a key then get a 401 that starts the standard MCP sign-in: they register (`/register`), send the user to `/authorize`, which forwards to the consent page at `app.luw.ai/mcp/connect`. There the logged-in user presses Allow, the page creates (or reuses) their "MCP key N" through the normal API-token call and posts it to `/oauth/approve`, and the client exchanges the code at `/token` for that key. Nothing is stored: registrations and pending requests are signed, codes are encrypted and expire in two minutes. Rotating the secret only breaks sign-ins in progress and makes clients register again; keys already handed out keep working. `LUW_MCP_CONNECT_URL` overrides the consent page (e.g. a local luwi at `http://localhost:3000/mcp/connect`). Without the secret the server behaves exactly as before.
+
+**App directories.** For ChatGPT's domain verification, set `OPENAI_APPS_CHALLENGE` to the token OpenAI shows; it is served as plain text at `/.well-known/openai-apps-challenge`. Sign-in must be on for both the ChatGPT and Claude directories: tools then declare `securitySchemes`, and a key Luw.ai rejects (deleted on the API page) makes the tool result ask the client to sign in again.
 
 **Vercel** (recommended; `vercel.json` and `api/mcp.ts` are included):
 
-1. Go to [vercel.com/new](https://vercel.com/new) → **Import** `Luvi-io/luw-mcp` → **Deploy**. Every setting comes from `vercel.json`, so nothing needs to be configured, and pushes to `main` redeploy automatically.
+1. Go to [vercel.com/new](https://vercel.com/new) → **Import** `Luvi-io/luw-mcp` → **Deploy**. Every setting comes from `vercel.json`, and pushes to `main` redeploy automatically. For sign-in, add `LUW_MCP_OAUTH_SECRET` under **Settings → Environment Variables** (Production) and redeploy.
 2. Project → **Settings → Domains** → add `mcp.luw.ai`, then create the DNS record Vercel shows (`CNAME mcp → cname.vercel-dns.com`).
 3. Use a Pro team for the company project. Vercel's Hobby plan is for non-commercial use.
 

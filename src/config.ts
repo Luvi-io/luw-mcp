@@ -5,6 +5,7 @@ export const DEFAULT_BASE_URL = "https://api.luw.ai/v2";
 export const API_KEY_URL = "https://app.luw.ai/dashboard/api";
 export const PRICING_URL = "https://app.luw.ai/pricing";
 export const DOCS_URL = "https://luw-ai.gitbook.io/api";
+export const CONNECT_URL = "https://app.luw.ai/mcp/connect";
 
 export const TOOLSETS = ["generate", "archigpt", "personas", "projects", "team"] as const;
 export type Toolset = (typeof TOOLSETS)[number];
@@ -27,6 +28,14 @@ export interface LuwConfig {
   mode: "local" | "remote";
   /** First delay between /results polls; grows to 5s. */
   pollIntervalMs: number;
+  /** Hosted mode: enables "Sign in to Luw.ai" (OAuth). Unset, callers must bring their own key. */
+  oauthSecret?: string;
+  /** Hosted mode: the Luw.ai consent page OAuth sends users to. */
+  oauthConnectUrl: string;
+  /** Hosted mode with OAuth, set per request: the WWW-Authenticate challenge a tool returns when the key is rejected. */
+  authChallenge?: string;
+  /** Served at /.well-known/openai-apps-challenge for ChatGPT app directory domain verification. */
+  openaiAppsChallenge?: string;
 }
 
 type Env = Record<string, string | undefined>;
@@ -43,8 +52,18 @@ export function loadConfig(rawEnv: Env = process.env, overrides: Partial<LuwConf
     toolsets: parseToolsets(env.LUW_TOOLSETS),
     mode: "local",
     pollIntervalMs: 1500,
+    oauthSecret: oauthSecret(env.LUW_MCP_OAUTH_SECRET),
+    oauthConnectUrl: env.LUW_MCP_CONNECT_URL?.trim() || CONNECT_URL,
+    openaiAppsChallenge: env.OPENAI_APPS_CHALLENGE?.trim() || undefined,
     ...overrides,
   };
+}
+
+function oauthSecret(value: string | undefined): string | undefined {
+  const secret = value?.trim();
+  if (!secret) return undefined;
+  if (secret.length < 32) throw new Error("LUW_MCP_OAUTH_SECRET must be at least 32 characters (e.g. `openssl rand -base64 48`).");
+  return secret;
 }
 
 export function parseToolsets(value: string | undefined): Set<Toolset> {

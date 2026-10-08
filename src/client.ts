@@ -33,6 +33,11 @@ export class LuwApiError extends Error {
     super(message);
     this.name = "LuwApiError";
   }
+
+  /** Luw.ai refused the key itself (deleted, revoked or mistyped), as opposed to the request. */
+  get rejectedKey(): boolean {
+    return this.httpStatus === 401 || this.httpStatus === 403 || (isRecord(this.details) && isAuthRejection(this.details));
+  }
 }
 
 export class MissingApiKeyError extends Error {
@@ -66,6 +71,9 @@ export interface LuwClientOptions {
   fetch?: typeof fetch;
   /** Appended to the MissingApiKeyError message: how to provide a key in this deployment. */
   missingKeyHint?: string;
+  /** Hosted server: errors say "reconnect" rather than LUW_API_KEY, and never link to pricing
+   *  (in-chat app stores don't allow selling credits). */
+  hosted?: boolean;
 }
 
 export class LuwClient {
@@ -137,14 +145,14 @@ export class LuwClient {
       try {
         data = text ? JSON.parse(text) : {};
       } catch {
-        if (!response.ok) throw new LuwApiError(describeHttpError(method, path, response.status), text.slice(0, 500), response.status);
+        if (!response.ok) throw new LuwApiError(describeHttpError(method, path, response.status, this.opts.hosted), text.slice(0, 500), response.status);
         throw new LuwApiError(`Luw.ai API ${method} ${path} returned a non-JSON response: ${text.slice(0, 200)}`, undefined, response.status);
       }
       if (isRecord(data) && data.status === false) {
-        throw new LuwApiError(describeApiError(data), data, response.status);
+        throw new LuwApiError(describeApiError(data, this.opts.hosted), data, response.status);
       }
       if (!response.ok) {
-        throw new LuwApiError(describeHttpError(method, path, response.status), data, response.status);
+        throw new LuwApiError(describeHttpError(method, path, response.status, this.opts.hosted), data, response.status);
       }
       return data as T;
     }
@@ -248,21 +256,33 @@ export function interpretJob(response: JobResponse, processingUrl?: string): Job
   return { done: false, processingUrl: url, percent: response.progress?.percent, state };
 }
 
-export function describeApiError(body: Params): string {
+const RECONNECT = "Reconnect Luw.ai in your assistant to sign in again, or use a valid API key.";
+
+function isAuthRejection(body: Params): boolean {
+  return (isRecord(body.errors) && !!body.errors.auth) || (typeof body.error === "string" && /authentication required/i.test(body.error));
+}
+
+export function describeApiError(body: Params, hosted = false): string {
   if (body.insert_coin) {
-    return `Your Luw.ai account is out of credits for this request. Add credits at ${PRICING_URL}`;
+    return hosted
+      ? "Your Luw.ai account doesn't have enough credits for this request."
+      : `Your Luw.ai account is out of credits for this request. Add credits at ${PRICING_URL}`;
   }
   const errors = body.errors;
   if (isRecord(errors)) {
     if (errors.auth) {
-      return `Luw.ai rejected the API key (${flatten(errors.auth)}). Check LUW_API_KEY or create a new key at ${API_KEY_URL}`;
+      return hosted
+        ? `Luw.ai rejected this connection's key (${flatten(errors.auth)}). ${RECONNECT}`
+        : `Luw.ai rejected the API key (${flatten(errors.auth)}). Check LUW_API_KEY or create a new key at ${API_KEY_URL}`;
     }
     const parts = Object.entries(errors).map(([field, value]) => `${field}: ${flatten(value)}`);
     if (parts.length) return `Luw.ai API error — ${parts.join("; ")}`;
   }
   if (typeof body.error === "string") {
     if (/authentication required/i.test(body.error)) {
-      return `Luw.ai rejected the request: ${body.error}. Check LUW_API_KEY or create a key at ${API_KEY_URL}`;
+      return hosted
+        ? `Luw.ai rejected the request: ${body.error}. ${RECONNECT}`
+        : `Luw.ai rejected the request: ${body.error}. Check LUW_API_KEY or create a key at ${API_KEY_URL}`;
     }
     const detail = body.response === undefined ? "" : ` (${flatten(body.response)})`;
     return `Luw.ai API error — ${body.error}${detail}`;
@@ -271,14 +291,18 @@ export function describeApiError(body: Params): string {
   return "Luw.ai API returned status=false without details";
 }
 
-function describeHttpError(method: string, path: string, status: number): string {
+function describeHttpError(method: string, path: string, status: number, hosted = false): string {
   const where = `Luw.ai API ${method} ${path} returned HTTP ${status}`;
-  if (status === 401 || status === 403) return `${where}: the API key was rejected. Check LUW_API_KEY or create a key at ${API_KEY_URL}`;
+  if (status === 401 || status === 403) {
+    return hosted ? `${where}: the key was rejected. ${RECONNECT}` : `${where}: the API key was rejected. Check LUW_API_KEY or create a key at ${API_KEY_URL}`;
+  }
   if (status === 404) return `${where}: not found.`;
   if (status === 429) return `${where}: too many requests. Wait a moment and try again.`;
   if (status >= 500) {
     // The API currently answers unknown API keys with a 500 instead of its documented auth error.
-    return `${where}. This usually means the API key is invalid — double-check LUW_API_KEY (keys: ${API_KEY_URL}). If the key is right, Luw.ai is having a temporary problem; try again shortly.`;
+    return hosted
+      ? `${where}. This usually means the key is invalid; reconnect Luw.ai in your assistant. If it keeps happening, Luw.ai is having a temporary problem; try again shortly.`
+      : `${where}. This usually means the API key is invalid — double-check LUW_API_KEY (keys: ${API_KEY_URL}). If the key is right, Luw.ai is having a temporary problem; try again shortly.`;
   }
   return where;
 }

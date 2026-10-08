@@ -20,7 +20,7 @@ export function registerCoreTools(server: Server, deps: Deps) {
         processing_url: z.string().min(1).describe("The processing_url returned by a generation tool."),
         wait: z.boolean().optional().describe("Wait for completion (default true). false = check once and return immediately."),
       },
-      annotations: { title: "Get result", readOnlyHint: true, openWorldHint: true },
+      annotations: { title: "Get result", readOnlyHint: true, destructiveHint: false, openWorldHint: true },
     },
     handler(deps, async (a, ctx) => {
       const started = Date.now();
@@ -97,7 +97,7 @@ export function registerCoreTools(server: Server, deps: Deps) {
         search: z.string().optional().describe("Case-insensitive filter on names/descriptions."),
         details: z.boolean().optional().describe("Include descriptions and preview image URLs (longer output)."),
       },
-      annotations: { title: "List options", readOnlyHint: true, openWorldHint: true },
+      annotations: { title: "List options", readOnlyHint: true, destructiveHint: false, openWorldHint: true },
     },
     handler(deps, async (a, ctx) => {
       const query = a.search?.trim().toLowerCase();

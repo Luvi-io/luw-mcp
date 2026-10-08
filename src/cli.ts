@@ -26,6 +26,10 @@ Environment:
   LUW_OUTPUT_DIR              Also download results into this folder (stdio mode)
   LUW_INLINE_IMAGES           Embed result images in tool output (default true)
   LUW_API_BASE_URL            Override the API base URL (default https://api.luw.ai/v2)
+  LUW_MCP_OAUTH_SECRET        --http only: 32+ random characters; lets clients sign in to Luw.ai
+                              (OAuth) instead of sending a key
+  LUW_MCP_CONNECT_URL         --http only: consent page (default https://app.luw.ai/mcp/connect)
+  OPENAI_APPS_CHALLENGE       --http only: ChatGPT app directory domain verification token
 `;
 
 async function main() {

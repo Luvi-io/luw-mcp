@@ -3,6 +3,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { DOCS_URL, VERSION, type LuwConfig } from "./config.js";
 import { createLuwServer } from "./mcp-server.js";
+import { createOAuth } from "./oauth.js";
 
 // Node 18 has no global Web Crypto; the SDK's web-standard transport calls crypto.randomUUID().
 if (!globalThis.crypto) (globalThis as { crypto?: unknown }).crypto = webcrypto;
@@ -14,28 +15,37 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
   "Access-Control-Allow-Headers":
     "Authorization, Content-Type, Accept, Mcp-Session-Id, Mcp-Protocol-Version, Last-Event-ID, X-Luw-Api-Key",
-  "Access-Control-Expose-Headers": "Mcp-Session-Id, Mcp-Protocol-Version",
+  "Access-Control-Expose-Headers": "Mcp-Session-Id, Mcp-Protocol-Version, WWW-Authenticate",
   "Access-Control-Max-Age": "86400",
 };
 
 /**
  * Stateless Streamable HTTP handler built on Web standard Request/Response, so it runs on Node,
  * Bun, Deno or edge runtimes. Each request carries its own Luw.ai key; nothing is stored server-side.
+ * With an OAuth secret configured, keyless clients are sent to sign in to Luw.ai instead (oauth.ts).
  */
 export function createFetchHandler(baseConfig: LuwConfig, fetchImpl?: typeof fetch) {
+  const oauth = baseConfig.oauthSecret ? createOAuth({ secret: baseConfig.oauthSecret, connectUrl: baseConfig.oauthConnectUrl }) : undefined;
   return async (request: Request): Promise<Response> => {
     const url = new URL(request.url);
+    const oauthResponse = await oauth?.handle(request, url);
+    if (oauthResponse) return oauthResponse.headers.has("Access-Control-Allow-Origin") ? oauthResponse : withCors(oauthResponse);
     if (request.method === "OPTIONS") return withCors(new Response(null, { status: 204 }));
 
+    if (url.pathname === "/.well-known/openai-apps-challenge" && request.method === "GET") {
+      return baseConfig.openaiAppsChallenge
+        ? withCors(new Response(baseConfig.openaiAppsChallenge, { headers: { "Content-Type": "text/plain; charset=utf-8" } }))
+        : jsonResponse({ error: "not_found" }, 404);
+    }
     if (url.pathname === "/health" || url.pathname === "/healthz") {
-      return jsonResponse({ status: "ok", version: VERSION });
+      return jsonResponse({ status: "ok", version: VERSION, oauth: !!oauth });
     }
     if (url.pathname === "/" && request.method === "GET") {
       return jsonResponse({
         name: "Luw.ai MCP server",
         version: VERSION,
         mcp_endpoint: `${url.origin}/mcp`,
-        auth: "Authorization: Bearer <LUW_API_KEY>",
+        auth: oauth ? "OAuth (sign in to Luw.ai) or Authorization: Bearer <LUW_API_KEY>" : "Authorization: Bearer <LUW_API_KEY>",
         docs: "https://github.com/Luvi-io/luw-mcp",
         api_docs: DOCS_URL,
       });
@@ -46,7 +56,10 @@ export function createFetchHandler(baseConfig: LuwConfig, fetchImpl?: typeof fet
       return withCors(new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers: { Allow: "POST, OPTIONS", "Content-Type": "application/json" } }));
     }
 
-    const server = createLuwServer({ ...baseConfig, apiKey: apiKeyFrom(request, url), mode: "remote" }, fetchImpl);
+    const apiKey = apiKeyFrom(request, url);
+    if (!apiKey && oauth) return withCors(oauth.unauthorized(url));
+    const authChallenge = oauth?.rejectedKeyChallenge(url);
+    const server = createLuwServer({ ...baseConfig, apiKey, mode: "remote", authChallenge }, fetchImpl);
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       maxRequestBodySize: MAX_BODY_BYTES,

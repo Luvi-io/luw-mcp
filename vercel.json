@@ -9,6 +9,14 @@
   "rewrites": [
     { "source": "/mcp", "destination": "/api/mcp" },
     { "source": "/health", "destination": "/api/mcp?route=health" },
+    { "source": "/.well-known/oauth-protected-resource", "destination": "/api/mcp?route=oauth-protected-resource" },
+    { "source": "/.well-known/oauth-protected-resource/mcp", "destination": "/api/mcp?route=oauth-protected-resource-mcp" },
+    { "source": "/.well-known/oauth-authorization-server", "destination": "/api/mcp?route=oauth-authorization-server" },
+    { "source": "/register", "destination": "/api/mcp?route=register" },
+    { "source": "/authorize", "destination": "/api/mcp?route=authorize" },
+    { "source": "/token", "destination": "/api/mcp?route=token" },
+    { "source": "/oauth/approve", "destination": "/api/mcp?route=approve" },
+    { "source": "/.well-known/openai-apps-challenge", "destination": "/api/mcp?route=openai-apps-challenge" },
     { "source": "/", "destination": "/api/mcp?route=info" }
   ]
 }

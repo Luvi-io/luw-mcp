@@ -38,6 +38,14 @@ export function createLuwServer(config: LuwConfig, fetchImpl?: typeof fetch): Mc
   const deps = createDeps(config, fetchImpl);
   const sets = config.toolsets;
 
+  // With sign-in on, every tool runs as the signed-in user. ChatGPT reads that from each tool's
+  // securitySchemes; the SDK only passes _meta through, which ChatGPT also reads.
+  if (config.mode === "remote" && config.oauthSecret) {
+    const register = server.registerTool.bind(server) as (name: string, tool: { _meta?: Record<string, unknown> }, cb: unknown) => unknown;
+    server.registerTool = ((name: string, tool: { _meta?: Record<string, unknown> }, cb: unknown) =>
+      register(name, { ...tool, _meta: { ...tool._meta, securitySchemes: [{ type: "oauth2" }] } }, cb)) as typeof server.registerTool;
+  }
+
   if (sets.has("generate")) {
     registerGenerateTools(server, deps);
     registerCoreTools(server, deps);

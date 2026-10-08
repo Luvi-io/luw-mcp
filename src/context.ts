@@ -34,9 +34,12 @@ export function handler<A>(deps: Deps, fn: (args: A, ctx: ToolContext) => Promis
       return await fn(args, ctx);
     } catch (error) {
       const expected = error instanceof LuwApiError || error instanceof InputError || error instanceof MissingApiKeyError;
+      // A deleted or revoked key: ChatGPT shows its "reconnect" screen for this challenge.
+      const challenge = error instanceof LuwApiError && error.rejectedKey ? deps.config.authChallenge : undefined;
       return {
         content: [{ type: "text", text: expected ? (error as Error).message : `Unexpected error: ${errorMessage(error)}` }],
         isError: true,
+        ...(challenge ? { _meta: { "mcp/www_authenticate": [challenge] } } : {}),
       };
     }
   };
@@ -65,6 +68,7 @@ export function createDeps(config: LuwConfig, fetchImpl: typeof fetch = globalTh
     apiKey: config.apiKey,
     baseUrl: config.baseUrl,
     fetch: fetchImpl,
+    hosted: config.mode === "remote",
     missingKeyHint:
       config.mode === "remote"
         ? 'send it as an "Authorization: Bearer <key>" header when connecting to this server.'
