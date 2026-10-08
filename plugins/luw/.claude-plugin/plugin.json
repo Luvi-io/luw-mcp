@@ -1,0 +1,34 @@
+{
+  "name": "luw",
+  "displayName": "Luw.ai",
+  "version": "0.1.1",
+  "description": "Official Luw.ai MCP server: AI interior, exterior and landscape design, photoreal rendering, image editing, video and 3D.",
+  "author": {
+    "name": "Luvi Technologies, Inc.",
+    "email": "support@luvi.io",
+    "url": "https://luw.ai"
+  },
+  "homepage": "https://github.com/Luvi-io/luw-mcp#readme",
+  "repository": "https://github.com/Luvi-io/luw-mcp",
+  "license": "MIT",
+  "keywords": ["interior-design", "architecture", "rendering", "real-estate", "virtual-staging", "image-editing", "video", "3d"],
+  "documentationUrl": "https://github.com/Luvi-io/luw-mcp#readme",
+  "supportUrl": "https://github.com/Luvi-io/luw-mcp/issues",
+  "privacyPolicyUrl": "https://luw.ai/privacy/",
+  "userConfig": {
+    "api_key": {
+      "type": "string",
+      "title": "Luw.ai API key",
+      "description": "Create one at https://app.luw.ai/dashboard/api",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "mcpServers": {
+    "luw": {
+      "command": "npx",
+      "args": ["-y", "@luw-ai/mcp"],
+      "env": { "LUW_API_KEY": "${user_config.api_key}" }
+    }
+  }
+}

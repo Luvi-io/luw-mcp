@@ -26,6 +26,8 @@
   <a href="https://vscode.dev/redirect/mcp/install?name=luw&inputs=%5B%7B%22type%22%3A%22promptString%22%2C%22id%22%3A%22luw_api_key%22%2C%22description%22%3A%22Luw.ai%20API%20key%20(https%3A%2F%2Fapp.luw.ai%2Fdashboard%2Fapi)%22%2C%22password%22%3Atrue%7D%5D&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40luw-ai%2Fmcp%22%5D%2C%22env%22%3A%7B%22LUW_API_KEY%22%3A%22%24%7Binput%3Aluw_api_key%7D%22%7D%7D"><img alt="Install in VS Code" src="https://img.shields.io/badge/VS_Code-Install_Luw.ai-0098FF?style=for-the-badge" height="32"></a>
   &nbsp;
   <a href="https://github.com/Luvi-io/luw-mcp/releases/latest/download/luw.mcpb"><img alt="Add to Claude Desktop" src="https://img.shields.io/badge/Claude_Desktop-Install_Luw.ai-D97757?style=for-the-badge&logo=claude&logoColor=white" height="32"></a>
+  &nbsp;
+  <a href="https://kiro.dev/launch/mcp/add?name=luw&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40luw-ai%2Fmcp%22%5D%2C%22env%22%3A%7B%22LUW_API_KEY%22%3A%22YOUR_LUW_API_KEY%22%7D%7D"><img alt="Add to Kiro" src="https://kiro.dev/images/add-to-kiro.svg" height="32"></a>
 </p>
 
 ---
@@ -48,6 +50,13 @@ Claude:  ⟶ luw_edit_image ⟶ luw_generate_video   ✓
 
 ```bash
 claude mcp add luw --scope user --env LUW_API_KEY=YOUR_LUW_API_KEY -- npx -y @luw-ai/mcp
+```
+
+Or install it as a plugin. Claude Code asks for your key and keeps it in secure storage:
+
+```bash
+claude plugin marketplace add Luvi-io/luw-mcp
+claude plugin install luw@luw-ai
 ```
 
 No-install alternative (hosted server):
@@ -80,7 +89,9 @@ Or add this to `claude_desktop_config.json` (*Settings → Developer → Edit Co
 <details>
 <summary><b>Cursor</b></summary>
 
-Click **Add to Cursor** above and replace `YOUR_LUW_API_KEY`, or add to `~/.cursor/mcp.json`:
+Click **Add to Cursor** above and replace `YOUR_LUW_API_KEY`. To use the hosted server instead (no Node.js needed), [add it to Cursor with this link](https://cursor.com/en-US/install-mcp?name=luw&config=eyJ1cmwiOiJodHRwczovL21jcC5sdXcuYWkvbWNwIiwiaGVhZGVycyI6eyJBdXRob3JpemF0aW9uIjoiQmVhcmVyIFlPVVJfTFVXX0FQSV9LRVkifX0%3D).
+
+Or add to `~/.cursor/mcp.json`:
 
 ```json
 {
@@ -115,9 +126,9 @@ Click **Install in VS Code** above. VS Code asks for your key and keeps it in it
 </details>
 
 <details>
-<summary><b>Windsurf</b></summary>
+<summary><b>Windsurf (Devin Desktop)</b></summary>
 
-Add to `~/.codeium/windsurf/mcp_config.json`:
+Add to `~/.config/devin/mcp_config.json` (Windows: `%APPDATA%\devin\mcp_config.json`). Older Windsurf versions use `~/.codeium/windsurf/mcp_config.json`.
 
 ```json
 {
@@ -152,7 +163,11 @@ env = { LUW_API_KEY = "YOUR_LUW_API_KEY" }
 <details>
 <summary><b>Gemini CLI</b></summary>
 
-Add to `~/.gemini/settings.json`:
+```bash
+gemini extensions install https://github.com/Luvi-io/luw-mcp
+```
+
+Gemini CLI asks for your key and keeps it in the system keychain. Or add to `~/.gemini/settings.json`:
 
 ```json
 {
@@ -165,6 +180,12 @@ Add to `~/.gemini/settings.json`:
   }
 }
 ```
+</details>
+
+<details>
+<summary><b>Kiro</b></summary>
+
+Click **Add to Kiro** above, confirm, then replace `YOUR_LUW_API_KEY` in Kiro's MCP config.
 </details>
 
 <details>

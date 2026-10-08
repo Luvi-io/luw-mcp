@@ -1,6 +1,6 @@
 # Maintainer guide
 
-How the Luw.ai MCP server is shipped. Users can reach it four ways, and each one is set up once here:
+How the Luw.ai MCP server is shipped. Users can reach it six ways, and each one is set up once here:
 
 | Channel | What users do | Source |
 |---|---|---|
@@ -8,6 +8,8 @@ How the Luw.ai MCP server is shipped. Users can reach it four ways, and each one
 | Claude Desktop extension | Double-click `luw.mcpb` | `release.yml` attaches it to the GitHub release |
 | Hosted endpoint `https://mcp.luw.ai/mcp` | Paste a URL plus a header | Deploy this repo (Docker or Heroku) |
 | MCP Registry `ai.luw/mcp` | Found in registry-backed clients and directories | `release.yml` (optional step) |
+| Gemini CLI extension | `gemini extensions install https://github.com/Luvi-io/luw-mcp` | `gemini-extension.json` at the repo root; the gallery at geminicli.com crawls tagged repos with the `gemini-cli-extension` topic daily |
+| Claude Code plugin | `claude plugin marketplace add Luvi-io/luw-mcp`, then `claude plugin install luw@luw-ai` | `.claude-plugin/marketplace.json` lists `plugins/luw/`, read straight from `main` |
 
 ## One-time setup
 
@@ -21,6 +23,7 @@ How the Luw.ai MCP server is shipped. Users can reach it four ways, and each one
    openssl pkey -in mcp-registry.pem -noout -text | grep -A3 "priv:" | tail -n +2 | tr -d ' :\n'   # → MCP_REGISTRY_PRIVATE_KEY secret
    ```
    Add the TXT record to the apex of `luw.ai`, then save the hex private key as the `MCP_REGISTRY_PRIVATE_KEY` secret. The release workflow skips this step while the secret is missing.
+4. **Gemini CLI gallery**: add the `gemini-cli-extension` topic to the GitHub repo (*About → Topics*). The crawler only lists tagged repos that have it.
 
 ## Deploying the hosted endpoint
 
@@ -63,7 +66,7 @@ Notes:
 
 ## Releasing
 
-1. Bump `version` in `package.json`, `server.json` (both `version` fields), `manifest.json` and `src/version.ts`. `npm test` fails if they disagree.
+1. Bump `version` in `package.json`, `server.json` (both `version` fields), `manifest.json`, `gemini-extension.json`, `plugins/luw/.claude-plugin/plugin.json` and `src/version.ts`. `npm test` fails if they disagree. Claude Code users get the plugin update only when its `version` changes.
 2. Update `CHANGELOG.md`.
 3. `git tag v0.2.0 && git push --tags`
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.1
+
+Distribution metadata only; the tools are unchanged.
+
+- Gemini CLI extension (`gemini-extension.json`): `gemini extensions install https://github.com/Luvi-io/luw-mcp` prompts for the API key and keeps it in the system keychain.
+- Claude Code plugin (`plugins/luw/`) and marketplace (`.claude-plugin/marketplace.json`): `claude plugin marketplace add Luvi-io/luw-mcp`, then `claude plugin install luw@luw-ai`.
+- MCP Registry entry now carries an icon. The server's own icon URL now returns a PNG, matching its declared `mimeType`.
+- README: Add to Kiro link, hosted-server link for Cursor, Devin Desktop config path for Windsurf.
+- `glama.json` so the Glama listing can be claimed.
+
 ## 0.1.0
 
 First release of the official Luw.ai MCP server.

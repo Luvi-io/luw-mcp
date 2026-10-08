@@ -6,13 +6,21 @@ import { connect, fakeLuw } from "./helpers.js";
 const read = async (path: string) => JSON.parse(await readFile(new URL(`../${path}`, import.meta.url), "utf8"));
 
 describe("release metadata", () => {
-  it("keeps package.json, server.json and manifest.json versions in sync", async () => {
-    const [pkg, server, manifest] = await Promise.all([read("package.json"), read("server.json"), read("manifest.json")]);
+  it("keeps package.json, server.json, manifest.json and plugin versions in sync", async () => {
+    const [pkg, server, manifest, gemini, claudePlugin] = await Promise.all([
+      read("package.json"),
+      read("server.json"),
+      read("manifest.json"),
+      read("gemini-extension.json"),
+      read("plugins/luw/.claude-plugin/plugin.json"),
+    ]);
     expect(server.version).toBe(pkg.version);
     expect(server.packages[0].version).toBe(pkg.version);
     expect(server.packages[0].identifier).toBe(pkg.name);
     expect(server.name).toBe(pkg.mcpName);
     expect(manifest.version).toBe(pkg.version);
+    expect(gemini.version).toBe(pkg.version);
+    expect(claudePlugin.version).toBe(pkg.version);
     expect(VERSION).toBe(pkg.version);
     expect(server.description.length).toBeLessThanOrEqual(100);
   });

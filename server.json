@@ -4,17 +4,24 @@
   "title": "Luw.ai",
   "description": "AI interior, exterior and landscape design, photoreal rendering, image editing, video and 3D.",
   "websiteUrl": "https://luw.ai",
+  "icons": [
+    {
+      "src": "https://luvicdn.net/img/luwai-10db78ea2bd139927f8b4f6c2ad1620c/lw-favicon.png?w=256&fm=png",
+      "mimeType": "image/png",
+      "sizes": ["256x256"]
+    }
+  ],
   "repository": {
     "url": "https://github.com/Luvi-io/luw-mcp",
     "source": "github"
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@luw-ai/mcp",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "transport": {
         "type": "stdio"
       },

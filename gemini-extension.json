@@ -1,0 +1,19 @@
+{
+  "name": "luw",
+  "version": "0.1.1",
+  "description": "Official Luw.ai extension: AI interior, exterior and landscape design, photoreal rendering, image editing, video and 3D.",
+  "mcpServers": {
+    "luw": {
+      "command": "npx",
+      "args": ["-y", "@luw-ai/mcp"]
+    }
+  },
+  "settings": [
+    {
+      "name": "Luw.ai API key",
+      "description": "Create one at https://app.luw.ai/dashboard/api",
+      "envVar": "LUW_API_KEY",
+      "sensitive": true
+    }
+  ]
+}

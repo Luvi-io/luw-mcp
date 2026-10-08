@@ -31,7 +31,7 @@ export function createLuwServer(config: LuwConfig, fetchImpl?: typeof fetch): Mc
       title: "Luw.ai",
       version: VERSION,
       websiteUrl: "https://luw.ai",
-      icons: [{ src: "https://luvicdn.net/img/luwai-10db78ea2bd139927f8b4f6c2ad1620c/lw-favicon.png?w=256&auto=format", mimeType: "image/png", sizes: ["256x256"] }],
+      icons: [{ src: "https://luvicdn.net/img/luwai-10db78ea2bd139927f8b4f6c2ad1620c/lw-favicon.png?w=256&fm=png", mimeType: "image/png", sizes: ["256x256"] }],
     },
     { instructions: instructions(config), capabilities: { logging: {} } },
   );

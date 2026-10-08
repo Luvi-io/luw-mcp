@@ -1,0 +1,17 @@
+{
+  "name": "luw-ai",
+  "description": "Official Luw.ai plugins for Claude Code",
+  "owner": {
+    "name": "Luvi Technologies, Inc.",
+    "email": "support@luvi.io",
+    "url": "https://luw.ai"
+  },
+  "plugins": [
+    {
+      "name": "luw",
+      "source": "./plugins/luw",
+      "description": "AI interior, exterior and landscape design, photoreal rendering, image editing, video and 3D.",
+      "category": "design"
+    }
+  ]
+}
