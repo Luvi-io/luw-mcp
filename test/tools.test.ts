@@ -11,7 +11,7 @@ describe("tool registry", () => {
   it("exposes everything except team by default", async () => {
     const { client } = await connect(fakeLuw().fetch);
     const names = (await client.listTools()).tools.map((t) => t.name);
-    expect(names).toHaveLength(21);
+    expect(names).toHaveLength(24);
     expect(names).toContain("luw_interior_design");
     expect(names).not.toContain("luw_team");
     expect(names.every((n) => /^luw_[a-z0-9_]+$/.test(n))).toBe(true);
@@ -29,7 +29,9 @@ describe("tool registry", () => {
     expect(toolFor("Magic Prompt AI")).toEqual(["luw_edit_image"]);
     expect(toolFor("Magic Wand AI")).toEqual(["luw_magic_wand"]);
     expect(toolFor("Landscape AI")).toEqual(["luw_landscape_design"]);
-    expect(toolFor("Photo Enhance AI")).toEqual(["luw_image_tools"]);
+    expect(toolFor("Photo Enhance AI")).toEqual(["luw_upscale_image"]);
+    expect(toolFor("Expand AI")).toEqual(["luw_expand_image"]);
+    expect(toolFor("Remove Furniture AI")).toEqual(["luw_remove_furniture"]);
     expect(toolFor("Change Background")).toEqual(["luw_background"]);
     expect(toolFor("Fluw AI")).toEqual(["luw_generate_image"]);
     expect(toolFor("Pattern AI")).toEqual(["luw_generate_pattern"]);
@@ -191,12 +193,16 @@ describe("generation", () => {
     await call("luw_background", { image: "https://example.com/p.jpg" });
     await call("luw_background", { image: "https://example.com/p.jpg", prompt: "on a marble counter" });
     await call("luw_generate_image", { prompt: "logo", format: "svg", aspect_ratio: "1:1" });
-    await call("luw_image_tools", { operation: "upscale", image: "https://example.com/p.jpg", scale: 4 });
+    await call("luw_upscale_image", { image: "https://example.com/p.jpg", scale: 4 });
+    await call("luw_remove_furniture", { image: "https://example.com/p.jpg" });
+    await call("luw_vectorize_image", { image: "https://example.com/p.jpg" });
     expect(luw.generates().map((g) => g.json)).toEqual([
       { model: "removebg", image: "https://example.com/p.jpg" },
       { model: "changebg", image: "https://example.com/p.jpg", prompt: "on a marble counter" },
       { model: "fluwvector", prompt: "logo", aspect_ratio: "1:1" },
       { model: "enhance", image: "https://example.com/p.jpg", hd: "4" },
+      { model: "removefurniture", image: "https://example.com/p.jpg" },
+      { model: "vector", image: "https://example.com/p.jpg" },
     ]);
   });
 
@@ -277,7 +283,7 @@ describe("file inputs", () => {
   it("uploads data: URIs", async () => {
     const luw = uploadRoutes(fakeLuw()).on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/o.png" }));
     const { call } = await connect(luw.fetch);
-    await call("luw_image_tools", { operation: "expand", image: `data:image/png;base64,${Buffer.from(PNG).toString("base64")}` });
+    await call("luw_expand_image", { image: `data:image/png;base64,${Buffer.from(PNG).toString("base64")}` });
     expect(luw.generates()[0]!.json).toEqual({ model: "expand", image: "https://cdn.test/up/1.png" });
   });
 
@@ -536,6 +542,6 @@ describe("other tools", () => {
     const { client } = await connect(fakeLuw().fetch, { mode: "remote" });
     const names = (await client.listTools()).tools.map((t) => t.name);
     expect(names).not.toContain("luw_run_model");
-    expect(names).toHaveLength(20);
+    expect(names).toHaveLength(23);
   });
 });

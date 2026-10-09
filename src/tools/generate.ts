@@ -364,37 +364,71 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     }),
   );
 
+  // One tool per image utility: app directories reject a tool that picks its operation from an argument.
   server.registerTool(
-    "luw_image_tools",
+    "luw_upscale_image",
     {
-      title: "Upscale, expand, empty a room, vectorize",
-      description:
-        "Luw.ai image utilities, 1 credit each:\n" +
-        "- upscale: enhance quality and enlarge 2x/4x/8x (Photo Enhance AI)\n" +
-        "- expand: outpaint a tightly cropped architectural photo to a wider view (Expand AI)\n" +
-        "- remove_furniture: empty a furnished room, keeping walls, floor and windows (Remove Furniture AI)\n" +
-        "- vectorize: convert a photo or drawing into a clean SVG vector (Vector AI)",
+      title: "Upscale an image",
+      description: "Luw.ai Photo Enhance AI: enhance the quality of an image and enlarge it 2x, 4x or 8x. Costs 1 credit.",
       inputSchema: {
-        operation: z.enum(["upscale", "expand", "remove_furniture", "vectorize"]),
-        image: imageInput("Input image"),
-        scale: z.union([z.literal(2), z.literal(4), z.literal(8)]).optional().describe("upscale only: 2, 4 or 8 (default 2)."),
+        image: imageInput("Image to upscale"),
+        scale: z.union([z.literal(2), z.literal(4), z.literal(8)]).optional().describe("2, 4 or 8 (default 2)."),
         precision: f.precision,
         format: f.format,
       },
-      annotations: { title: "Image tools", ...GENERATE },
+      annotations: { title: "Upscale image", ...GENERATE },
     },
-    handler(deps, async (a, ctx) => {
-      const image = await ctx.files.resolve(a.image, { signal: ctx.signal });
-      const model = { upscale: "enhance", expand: "expand", remove_furniture: "removefurniture", vectorize: "vector" }[a.operation];
-      const label = { upscale: "Photo Enhance AI", expand: "Expand AI", remove_furniture: "Remove Furniture AI", vectorize: "Vector AI" }[a.operation];
-      return generate(ctx, label, {
-        model,
-        image,
-        hd: a.operation === "upscale" ? String(a.scale ?? 2) : undefined,
-        precise: a.operation === "vectorize" ? undefined : a.precision,
-        format: a.operation === "vectorize" ? undefined : a.format,
-      });
-    }),
+    handler(deps, async (a, ctx) =>
+      generate(ctx, "Photo Enhance AI", {
+        model: "enhance",
+        image: await ctx.files.resolve(a.image, { signal: ctx.signal }),
+        hd: String(a.scale ?? 2),
+        precise: a.precision,
+        format: a.format,
+      }),
+    ),
+  );
+
+  server.registerTool(
+    "luw_expand_image",
+    {
+      title: "Expand a cropped photo",
+      description: "Luw.ai Expand AI: outpaint a tightly cropped architectural or interior photo to a wider view. Costs 1 credit.",
+      inputSchema: { image: imageInput("Photo to expand"), precision: f.precision, format: f.format },
+      annotations: { title: "Expand image", ...GENERATE },
+    },
+    handler(deps, async (a, ctx) =>
+      generate(ctx, "Expand AI", { model: "expand", image: await ctx.files.resolve(a.image, { signal: ctx.signal }), precise: a.precision, format: a.format }),
+    ),
+  );
+
+  server.registerTool(
+    "luw_remove_furniture",
+    {
+      title: "Empty a room",
+      description: "Luw.ai Remove Furniture AI: remove the furniture from a room photo, keeping walls, floor and windows. Costs 1 credit.",
+      inputSchema: { image: imageInput("Photo of the furnished room"), precision: f.precision, format: f.format },
+      annotations: { title: "Remove furniture", ...GENERATE },
+    },
+    handler(deps, async (a, ctx) =>
+      generate(ctx, "Remove Furniture AI", {
+        model: "removefurniture",
+        image: await ctx.files.resolve(a.image, { signal: ctx.signal }),
+        precise: a.precision,
+        format: a.format,
+      }),
+    ),
+  );
+
+  server.registerTool(
+    "luw_vectorize_image",
+    {
+      title: "Convert an image to SVG",
+      description: "Luw.ai Vector AI: convert a photo or drawing into a clean SVG vector. Costs 1 credit.",
+      inputSchema: { image: imageInput("Photo or drawing to vectorize") },
+      annotations: { title: "Vectorize image", ...GENERATE },
+    },
+    handler(deps, async (a, ctx) => generate(ctx, "Vector AI", { model: "vector", image: await ctx.files.resolve(a.image, { signal: ctx.signal }) })),
   );
 
   server.registerTool(
@@ -600,7 +634,10 @@ export const GENERATE_TOOL_NAMES = [
   "luw_edit_image",
   "luw_magic_wand",
   "luw_landscape_design",
-  "luw_image_tools",
+  "luw_upscale_image",
+  "luw_expand_image",
+  "luw_remove_furniture",
+  "luw_vectorize_image",
   "luw_background",
   "luw_segment",
   "luw_generate_image",

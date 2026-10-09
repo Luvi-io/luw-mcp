@@ -106,7 +106,7 @@ describe("OAuth sign-in (hosted)", () => {
 
     const client = new Client({ name: "t", version: "1" });
     await client.connect(new StreamableHTTPClientTransport(new URL(`${ORIGIN}/mcp`), { authProvider: provider, fetch: fetchVia }));
-    expect((await client.listTools()).tools.length).toBe(20);
+    expect((await client.listTools()).tools.length).toBe(23);
     await client.callTool({ name: "luw_render", arguments: { image: "https://e.com/a.jpg" } });
     expect(luw.generates()[0]!.headers.get("authorization")).toBe("Bearer user-key-123");
     await client.close();
@@ -125,7 +125,7 @@ describe("OAuth sign-in (hosted)", () => {
     });
     const client = new Client({ name: "t", version: "1" });
     await client.connect(transport);
-    expect((await client.listTools()).tools.length).toBe(20);
+    expect((await client.listTools()).tools.length).toBe(23);
     await client.close();
   });
 
@@ -260,7 +260,7 @@ describe("app directory requirements (ChatGPT, Claude)", () => {
   it("declares sign-in on every tool and all three safety hints, with OAuth on", async () => {
     const client = await hostedClient(fakeLuw(), true);
     const { tools } = await client.listTools();
-    expect(tools.length).toBe(20);
+    expect(tools.length).toBe(23);
     for (const tool of tools) {
       expect(tool._meta?.securitySchemes, tool.name).toEqual([{ type: "oauth2" }]);
       for (const hint of ["readOnlyHint", "destructiveHint", "openWorldHint"] as const) {

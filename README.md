@@ -291,7 +291,10 @@ Built-in prompts show up as slash commands or prompt templates in your client: `
 | `luw_edit_image` | Edit any image with a sentence (Magic Prompt); 2K/4K | 1 |
 | `luw_magic_wand` | Masked edit: replace, remove, or apply a material | 1 |
 | `luw_landscape_design` | Gardens and outdoor areas, matched to climate and sun | 1 |
-| `luw_image_tools` | `upscale` 2/4/8×, `expand`, `remove_furniture`, `vectorize` to SVG | 1 |
+| `luw_upscale_image` | Enhance and enlarge 2/4/8× | 1 |
+| `luw_expand_image` | Outpaint a cropped photo to a wider view | 1 |
+| `luw_remove_furniture` | Empty a furnished room | 1 |
+| `luw_vectorize_image` | Photo or drawing to SVG | 1 |
 | `luw_background` | Remove a background, or replace it with a generated scene | 1 |
 | `luw_segment` | Object masks (all objects, or by prompt) as image URLs | 1 |
 | `luw_generate_image` | Text to image (Fluw), or `format: "svg"` for vectors | 2 |
