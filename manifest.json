@@ -71,7 +71,7 @@
   "tools_generated": false,
   "keywords": ["interior design", "architecture", "rendering", "real estate", "virtual staging", "image editing", "3d", "video"],
   "license": "MIT",
-  "privacy_policies": ["https://luw.ai/privacy/"],
+  "privacy_policies": ["https://app.luw.ai/docs/privacy"],
   "compatibility": {
     "platforms": ["darwin", "win32", "linux"],
     "runtimes": {

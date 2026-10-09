@@ -14,7 +14,7 @@
   "keywords": ["interior-design", "architecture", "rendering", "real-estate", "virtual-staging", "image-editing", "video", "3d"],
   "documentationUrl": "https://github.com/Luvi-io/luw-mcp#readme",
   "supportUrl": "https://github.com/Luvi-io/luw-mcp/issues",
-  "privacyPolicyUrl": "https://luw.ai/privacy/",
+  "privacyPolicyUrl": "https://app.luw.ai/docs/privacy",
   "userConfig": {
     "api_key": {
       "type": "string",
