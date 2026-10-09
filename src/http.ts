@@ -64,6 +64,8 @@ export function createFetchHandler(baseConfig: LuwConfig, fetchImpl?: typeof fet
       sessionIdGenerator: undefined,
       maxRequestBodySize: MAX_BODY_BYTES,
     });
+    // The transport answers malformed or unsupported requests with a bare 400; log why, or the logs only show the status.
+    transport.onerror = (error) => console.warn(`MCP request rejected (${request.headers.get("user-agent") ?? "unknown client"}): ${error.message}`);
     const cleanup = once(() => {
       void transport.close().catch(() => {});
       void server.close().catch(() => {});
