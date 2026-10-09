@@ -16,7 +16,7 @@ export function registerArchiGptTool(server: Server, deps: Deps) {
         language: z.string().optional().describe('Reply language, e.g. "en" or "tr". Auto-detected when omitted.'),
         persona_id: z.number().int().positive().optional().describe("Persona that remembers this conversation."),
       },
-      annotations: { title: "ArchiGPT", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+      annotations: { title: "Ask an architecture expert", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     },
     handler(deps, async (a, ctx) => {
       const image = await ctx.files.resolveOptional(a.image, { signal: ctx.signal });
