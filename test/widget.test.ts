@@ -24,7 +24,7 @@ describe("result viewer", () => {
     const { client } = await connect(fakeLuw().fetch, { mode: "remote" });
     expect((await client.listResources()).resources.map((r) => r.uri)).toContain(RESULT_VIEWER_URI);
 
-    const [content] = (await client.readResource({ uri: RESULT_VIEWER_URI })).contents as [{ mimeType: string; text: string; _meta: any }];
+    const [content] = (await client.readResource({ uri: RESULT_VIEWER_URI })).contents as unknown as [{ mimeType: string; text: string; _meta: any }];
     expect(content.mimeType).toBe(HTML_MIME);
     expect(content._meta.ui.domain).toBe("https://mcp.luw.ai");
     expect(content._meta.ui.csp.connectDomains).toEqual([]);
