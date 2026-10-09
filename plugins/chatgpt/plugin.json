@@ -1,0 +1,94 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "luw-ai",
+  "version": "1.0.0",
+  "description": "AI design studio for interiors, exteriors and landscapes: redesign rooms from photos, render sketches, edit images, and create walkthrough videos and 3D models.",
+  "author": {
+    "name": "Luvi Technologies, Inc.",
+    "email": "support@luvi.io",
+    "url": "https://luw.ai"
+  },
+  "homepage": "https://luw.ai",
+  "repository": "https://github.com/Luvi-io/luw-mcp",
+  "license": "MIT",
+  "keywords": ["interior design", "architecture", "rendering", "virtual staging", "real estate", "landscape design"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Luw.ai",
+        "shortDescription": "AI interior & exterior design",
+        "longDescription": "Luw.ai is an AI design studio for homeowners, architects, interior designers and real-estate agents. Share a photo of a room and ask for a new style, stage an empty space with furniture, or turn a sketch or CAD view into a photorealistic architectural render. Then refine it in plain words, such as changing the floor to oak or removing clutter, without leaving the chat.\n\nYou can also redesign building exteriors and gardens, turn a finished design into a walkthrough video, create a 3D model from a product photo, generate seamless material textures, and ask ArchiGPT, Luw.ai's architecture assistant, design and planning questions.\n\nRequires a Luw.ai account; each generation uses credits from it. Attach a photo or share a link to one. Videos and 3D models take a few minutes and are collected when ready.",
+        "developerName": "Luvi Technologies, Inc.",
+        "category": "Design",
+        "capabilities": ["Redesign rooms", "Render sketches", "Edit images", "Design exteriors and gardens", "Create videos", "Create 3D models"],
+        "websiteURL": "https://luw.ai",
+        "supportURL": "https://app.luw.ai/support",
+        "privacyPolicyURL": "https://luw.ai/privacy/",
+        "termsOfServiceURL": "https://luw.ai/terms/",
+        "defaultPrompt": [
+          "Redesign this living room in Japandi style and keep the layout.",
+          "Turn my sketch of a house into a photorealistic render at golden hour.",
+          "Stage this empty room as a cozy Scandinavian bedroom."
+        ],
+        "composerIcon": "./assets/logo.png",
+        "logo": "./assets/logo.png"
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Redesign a room photo in a named style",
+              "prompt": "Redesign this bedroom in Japandi style and keep the layout: https://luvicdn.net/img/luwai-10db78ea2bd139927f8b4f6c2ad1620c/luw__before.png",
+              "tools_triggered": "luw_interior_design",
+              "expected_behavior": "Returns an image of the same bedroom, same layout and camera angle, restyled in Japandi (light wood, neutral linen, low furniture)."
+            },
+            {
+              "description": "Refine the previous result in plain words",
+              "prompt": "Make the bed linen in that design dark green velvet.",
+              "tools_triggered": "luw_edit_image",
+              "expected_behavior": "Returns the previous design with dark green velvet bedding and everything else unchanged."
+            },
+            {
+              "description": "Render a hand sketch",
+              "prompt": "Turn this sketch into a photorealistic render of a modern villa at golden hour: https://luvicdn.net/img/Luvi-f766175dd0d728423f52f00ece50aac6/luwskc-1.png",
+              "tools_triggered": "luw_sketch_to_render",
+              "expected_behavior": "Returns a photorealistic render that keeps the sketch's volumes, roof lines and window openings, lit at golden hour."
+            },
+            {
+              "description": "Redesign a building exterior",
+              "prompt": "Give this house a modern Scandinavian exterior with dark timber cladding: https://luvicdn.net/img/luwai-10db78ea2bd139927f8b4f6c2ad1620c/luw2_before.jpg",
+              "tools_triggered": "luw_exterior_design",
+              "expected_behavior": "Returns the same house from the same viewpoint with a dark timber facade in a modern Scandinavian style."
+            },
+            {
+              "description": "Create a seamless material texture",
+              "prompt": "Create a seamless blue zellige tile texture.",
+              "tools_triggered": "luw_generate_pattern",
+              "expected_behavior": "Returns one square, tileable texture of glossy blue zellige tiles that repeats without visible seams."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Unrelated request: Luw.ai should not be called for a weather question; ChatGPT answers on its own.",
+              "prompt": "What's the weather in Istanbul tomorrow?"
+            },
+            {
+              "description": "Purchase request: Luw.ai has no purchase action and shows no prices or checkout links, so no Luw.ai tool should run.",
+              "prompt": "Buy 500 Luw.ai credits for me."
+            },
+            {
+              "description": "Writing task outside design: Luw.ai should not be called to write a cover letter.",
+              "prompt": "Write a cover letter for a marketing manager job."
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "The plugin sells nothing inside ChatGPT and shows no prices, plans, upgrade prompts or checkout links. Generations use credits the user already has in their Luw.ai account."
+      },
+      "publication": {
+        "countries": [],
+        "release_notes": "First release: interior, exterior, landscape and sketch-to-render design, image editing, walkthrough videos, 3D models, seamless textures and ArchiGPT."
+      }
+    }
+  }
+}

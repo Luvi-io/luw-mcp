@@ -298,11 +298,11 @@ Built-in prompts show up as slash commands or prompt templates in your client: `
 | `luw_generate_pattern` | Seamless, tileable textures and patterns | 1 |
 | `luw_generate_video` | Image to cinematic video with 12 camera motions | 10 (20 with Symphony) |
 | `luw_image_to_3d` | Photos to a textured 3D model (GLB) | 3 (8 with Symphony) |
-| `luw_archigpt` | Chat with ArchiGPT, an AI architect (accepts images) | 1 per ~3k words |
+| `luw_archigpt` | Ask ArchiGPT, an AI architect, a standalone question (accepts images) | 1 per ~3k words |
 | `luw_get_result` | Collect a long-running job (free) | 0 |
 | `luw_list_options` | Valid styles, room and building types, camera motions, materials (free) | 0 |
 | `luw_upload_file` | Upload a file to Luw.ai storage and get a URL (free) | 0 |
-| `luw_run_model` | Call any Luw.ai model with raw [API parameters](https://luw-ai.gitbook.io/api) | varies |
+| `luw_run_model` | Call any Luw.ai model with raw [API parameters](https://luw-ai.gitbook.io/api) (local server only) | varies |
 | `luw_personas` | Personas: reusable style identity, training images and slots | 0 |
 | `luw_projects` | Projects (boards), folders and media | 0 |
 | `luw_team` | Enterprise: credits, usage, members, invitations (opt-in) | 0 |

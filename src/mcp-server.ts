@@ -1,4 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { ZodType } from "zod";
+import { acceptAttachedPhoto } from "./attachments.js";
 import { API_KEY_URL, SERVER_NAME, VERSION, type LuwConfig } from "./config.js";
 import { createDeps } from "./context.js";
 import { registerPrompts } from "./prompts.js";
@@ -12,7 +14,7 @@ function instructions(config: LuwConfig): string {
   const inputs =
     config.mode === "local"
       ? "Image inputs accept https:// URLs, local file paths or data: URIs — local files are uploaded to Luw.ai automatically."
-      : "Image inputs must be public https:// URLs or data: URIs (this hosted server can't read the user's local files).";
+      : "Image inputs must be public https:// URLs or data: URIs (this hosted server can't read the user's local files); in ChatGPT, pass a photo the user attached as image_file.";
   return [
     "Luw.ai: AI tools for interior, exterior and landscape design, architectural rendering, image editing, video and 3D.",
     inputs,
@@ -39,15 +41,18 @@ export function createLuwServer(config: LuwConfig, fetchImpl?: typeof fetch): Mc
   const deps = createDeps(config, fetchImpl);
   const sets = config.toolsets;
 
-  // Records each tool for the luw://guide resource. With sign-in on, every tool also runs as the
-  // signed-in user: ChatGPT reads that from each tool's securitySchemes; the SDK only passes _meta through.
-  type ToolConfig = { title?: string; description?: string; _meta?: Record<string, unknown> };
+  // Records each tool for the luw://guide resource. On the hosted server, photo tools also accept a file the
+  // user attached in ChatGPT. With sign-in on, every tool runs as the signed-in user: ChatGPT reads that from
+  // each tool's securitySchemes; the SDK only passes _meta through.
+  type ToolConfig = { title?: string; description?: string; inputSchema?: Record<string, ZodType>; _meta?: Record<string, unknown> };
+  type Callback = Parameters<typeof acceptAttachedPhoto>[2];
   const tools: ToolDoc[] = [];
   const signIn = config.mode === "remote" && Boolean(config.oauthSecret);
-  const register = server.registerTool.bind(server) as (name: string, tool: ToolConfig, cb: unknown) => unknown;
-  server.registerTool = ((name: string, tool: ToolConfig, cb: unknown) => {
+  const register = server.registerTool.bind(server) as (name: string, tool: ToolConfig, cb: Callback) => unknown;
+  server.registerTool = ((name: string, tool: ToolConfig, cb: Callback) => {
     tools.push({ name, title: tool.title, description: tool.description });
-    return register(name, signIn ? { ...tool, _meta: { ...tool._meta, securitySchemes: [{ type: "oauth2" }] } } : tool, cb);
+    const [spec, call] = config.mode === "remote" ? acceptAttachedPhoto(name, tool, cb) : [tool, cb];
+    return register(name, signIn ? { ...spec, _meta: { ...spec._meta, securitySchemes: [{ type: "oauth2" }] } } : spec, call);
   }) as typeof server.registerTool;
 
   if (sets.has("generate")) {

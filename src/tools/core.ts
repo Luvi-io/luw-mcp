@@ -112,6 +112,10 @@ export function registerCoreTools(server: Server, deps: Deps) {
     handler(deps, (a, ctx) => listOptions(ctx, a.kind, a.search, a.details)),
   );
 
+  // A raw-parameter executor is local-only: app directories (ChatGPT, Claude) list the hosted server
+  // and reject tools that run operations not individually exposed for review.
+  if (deps.config.mode !== "local") return;
+
   server.registerTool(
     "luw_run_model",
     {

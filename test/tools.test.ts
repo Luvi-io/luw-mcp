@@ -302,6 +302,38 @@ describe("file inputs", () => {
     expect(luw.calls).toHaveLength(0);
   });
 
+  it("lets ChatGPT pass a photo the user attached, in the file shape its fileParams require", async () => {
+    const { client } = await connect(fakeLuw().fetch, { mode: "remote" });
+    const tools = (await client.listTools()).tools;
+    const interior = tools.find((t) => t.name === "luw_interior_design")!;
+    expect(interior._meta?.["openai/fileParams"]).toEqual(["image_file"]);
+    const file = interior.inputSchema.properties!.image_file as { properties: object; required: string[] };
+    expect(Object.keys(file.properties).sort()).toEqual(["download_url", "file_id", "file_name", "mime_type"]);
+    expect(file.required.sort()).toEqual(["download_url", "file_id"]);
+    expect(interior.inputSchema.required ?? []).not.toContain("image");
+    // Persona trainings store their image, and ChatGPT's download links expire.
+    expect(tools.find((t) => t.name === "luw_personas")!.inputSchema.properties).not.toHaveProperty("image_file");
+
+    const local = (await (await connect(fakeLuw().fetch)).client.listTools()).tools.find((t) => t.name === "luw_interior_design")!;
+    expect(local.inputSchema.properties).not.toHaveProperty("image_file");
+    expect(local.inputSchema.required).toContain("image");
+  });
+
+  it("generates from an attached photo's download link, and asks for a photo when there is none", async () => {
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/out.png" }));
+    const { call } = await connect(luw.fetch, { mode: "remote" });
+    const attached = { download_url: "https://files.oaiusercontent.test/room.jpg?sig=1", file_id: "file_123", mime_type: "image/jpeg" };
+
+    const result = await call("luw_interior_design", { image_file: attached, styles: ["Scandinavian"] });
+    expect(result.isError).toBeFalsy();
+    expect(luw.generates()[0]!.json.image).toBe(attached.download_url);
+
+    const missing = await call("luw_interior_design", { styles: ["Scandinavian"] });
+    expect(missing.isError).toBe(true);
+    expect(textOf(missing)).toMatch(/No photo given/);
+    expect(luw.generates()).toHaveLength(1);
+  });
+
   it("rejects non-media local files", async () => {
     const dir = await mkdtemp(join(tmpdir(), "luw-test-"));
     const file = join(dir, "id_rsa");
@@ -412,22 +444,16 @@ describe("outputs", () => {
 });
 
 describe("other tools", () => {
-  it("ArchiGPT sends history with ids and returns the answer", async () => {
+  it("ArchiGPT sends one standalone question and returns the answer", async () => {
+    // App directories forbid asking for prior conversation turns, so ArchiGPT takes no history.
     const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, message: "Put the bed on the solid wall.", usage: 120, left: 880 }));
-    const result = await (await connect(luw.fetch)).call("luw_archigpt", {
-      message: "Where should the bed go?",
-      history: [
-        { role: "user", content: "Hi" },
-        { role: "assistant", content: "Hello!" },
-      ],
-      language: "en",
-    });
+    const { client, call } = await connect(luw.fetch);
+    const tool = (await client.listTools()).tools.find((t) => t.name === "luw_archigpt")!;
+    expect(Object.keys(tool.inputSchema.properties ?? {})).not.toContain("history");
+
+    const result = await call("luw_archigpt", { message: "Where should the bed go?", language: "en" });
     expect(textOf(result)).toContain("Put the bed on the solid wall.");
-    const body = luw.generates()[0]!.json;
-    expect(body).toMatchObject({ model: "archigpt", prompt: "Where should the bed go?", lang: "en" });
-    expect(body.history).toHaveLength(2);
-    expect(new Set(body.history.map((h: any) => h.id)).size).toBe(2);
-    expect(body.history[1]).toMatchObject({ role: "assistant", content: "Hello!" });
+    expect(luw.generates()[0]!.json).toEqual({ model: "archigpt", prompt: "Where should the bed go?", lang: "en" });
   });
 
   it("lists design styles from the public endpoint without auth", async () => {
@@ -503,5 +529,13 @@ describe("other tools", () => {
     });
     expect(result.structuredContent).toMatchObject({ status: "completed" });
     expect(luw.generates()[0]!.json).toEqual({ model: "interior", image: "https://e.com/a.jpg", style_transfer: "persona", pid: 3, precise: 90 });
+  });
+
+  it("keeps luw_run_model off the hosted server", async () => {
+    // App directories reject generic executors; the hosted server is what ChatGPT and Claude list.
+    const { client } = await connect(fakeLuw().fetch, { mode: "remote" });
+    const names = (await client.listTools()).tools.map((t) => t.name);
+    expect(names).not.toContain("luw_run_model");
+    expect(names).toHaveLength(20);
   });
 });
