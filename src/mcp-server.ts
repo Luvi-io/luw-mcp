@@ -53,8 +53,8 @@ export function createLuwServer(config: LuwConfig, fetchImpl?: typeof fetch): Mc
   server.registerTool = ((name: string, tool: ToolConfig, cb: Callback) => {
     tools.push({ name, title: tool.title, description: tool.description });
     const remote = config.mode === "remote";
-    const [attachable, call] = remote ? acceptAttachedPhoto(name, tool, cb) : [tool, cb];
-    const spec = remote ? withResultViewer(name, attachable) : attachable;
+    const [attachable, attachCall] = remote ? acceptAttachedPhoto(name, tool, cb) : [tool, cb];
+    const [spec, call] = remote ? withResultViewer(name, attachable, attachCall) : [attachable, attachCall];
     return register(name, signIn ? { ...spec, _meta: { ...spec._meta, securitySchemes: [{ type: "oauth2" }] } } : spec, call);
   }) as typeof server.registerTool;
 

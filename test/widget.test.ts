@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { RESULT_VIEWER_URI } from "../src/widget.js";
-import { connect, fakeLuw } from "./helpers.js";
+import { connect, fakeLuw, textOf } from "./helpers.js";
 
 const HTML_MIME = "text/html;profile=mcp-app";
 
@@ -53,5 +53,16 @@ describe("result viewer", () => {
     const pattern = await call("luw_generate_pattern", { prompt: "blue zellige tiles" });
     expect(pattern.structuredContent).toMatchObject({ tile: true });
     expect(pattern.structuredContent).not.toHaveProperty("source");
+  });
+
+  it("tells the model the result is already on screen, so it doesn't embed a broken image link", async () => {
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://i.luvicdn.com/luwai/1/out.png" }));
+    const remote = await connect(luw.fetch, { mode: "remote" });
+    const result = await remote.call("luw_interior_design", { image: "https://luvicdn.net/img/room.jpg" });
+    expect(textOf(result)).toMatch(/^Shown to the user in the Luw\.ai result viewer/);
+    expect(textOf(result)).toContain("https://i.luvicdn.com/luwai/1/out.png");
+
+    const local = await connect(luw.fetch);
+    expect(textOf(await local.call("luw_interior_design", { image: "https://luvicdn.net/img/room.jpg" }))).not.toContain("result viewer");
   });
 });

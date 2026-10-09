@@ -1,3 +1,4 @@
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { Server } from "./context.js";
 import { GENERATE_TOOL_NAMES } from "./tools/generate.js";
 
@@ -11,14 +12,19 @@ const VIEWER_TOOLS = new Set<string>([...GENERATE_TOOL_NAMES, "luw_get_result"])
 const RESOURCE_DOMAINS = ["https://i.luvicdn.com", "https://img.luvicdn.com", "https://luvicdn.com", "https://luvicdn.net", "https://fal.media", "https://v3.fal.media", "https://v3b.fal.media"];
 
 type ToolSpec = { _meta?: Record<string, unknown> };
+type Callback = (args: Record<string, unknown>, extra: unknown) => unknown;
+
+// Without this the model also embeds the result's link as an image, which shows as a broken image below the viewer.
+const VIEWER_NOTE =
+  "Shown to the user in the Luw.ai result viewer, with a before/after comparison and a full-size link. Image links in a reply don't display in this chat.";
 
 /**
  * Links a tool to the result viewer. ChatGPT doesn't show images a tool returns (only the model sees them)
  * and won't render image links the model writes, so without a viewer users see a broken image.
  */
-export function withResultViewer<T extends ToolSpec>(name: string, tool: T): T {
-  if (!VIEWER_TOOLS.has(name)) return tool;
-  return {
+export function withResultViewer<T extends ToolSpec>(name: string, tool: T, cb: Callback): [T, Callback] {
+  if (!VIEWER_TOOLS.has(name)) return [tool, cb];
+  const spec = {
     ...tool,
     _meta: {
       ...tool._meta,
@@ -28,6 +34,14 @@ export function withResultViewer<T extends ToolSpec>(name: string, tool: T): T {
       "openai/toolInvocation/invoked": "Luw.ai result ready",
     },
   };
+  const call: Callback = async (args, extra) => {
+    const result = (await cb(args, extra)) as CallToolResult;
+    const status = result.structuredContent?.status;
+    const [first, ...rest] = result.content ?? [];
+    if ((status !== "completed" && status !== "partial") || first?.type !== "text") return result;
+    return { ...result, content: [{ ...first, text: `${VIEWER_NOTE}\n${first.text}` }, ...rest] };
+  };
+  return [spec, call];
 }
 
 /** The MCP Apps view (ChatGPT, Claude and other hosts) that shows a Luw.ai result in the conversation. */
