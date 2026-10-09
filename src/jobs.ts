@@ -83,6 +83,10 @@ export interface FormatOptions {
   maskLabels?: string[];
   /** Added when a job finishes with no output at all, e.g. what to try instead. */
   emptyHint?: string;
+  /** The input image, so the result viewer can show before and after. */
+  source?: string;
+  /** Seamless textures: the result viewer shows them tiled. */
+  tile?: boolean;
 }
 
 /** Turns an Outcome into a tool result: readable summary, structured data, inline previews, saved files. */
@@ -157,6 +161,8 @@ export async function formatOutcome(ctx: ToolContext, outcome: Outcome, options:
     structuredContent: {
       status,
       outputs: urls,
+      ...(options.source && /^https?:\/\//i.test(options.source) && (urls.length || masks.length) ? { source: options.source } : {}),
+      ...(options.tile && urls.length ? { tile: true } : {}),
       ...(masks.length ? { masks } : {}),
       ...(texts.length ? { text: texts.join("\n") } : {}),
       ...(pending.length ? { processing_urls: pending.map((p) => p.processingUrl) } : {}),

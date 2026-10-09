@@ -9,6 +9,7 @@ import { registerArchiGptTool } from "./tools/archigpt.js";
 import { registerCoreTools } from "./tools/core.js";
 import { registerGenerateTools } from "./tools/generate.js";
 import { registerPersonaTool, registerProjectTool, registerTeamTool } from "./tools/workspace.js";
+import { registerResultViewer, withResultViewer } from "./widget.js";
 
 function instructions(config: LuwConfig): string {
   const inputs =
@@ -42,8 +43,8 @@ export function createLuwServer(config: LuwConfig, fetchImpl?: typeof fetch): Mc
   const sets = config.toolsets;
 
   // Records each tool for the luw://guide resource. On the hosted server, photo tools also accept a file the
-  // user attached in ChatGPT. With sign-in on, every tool runs as the signed-in user: ChatGPT reads that from
-  // each tool's securitySchemes; the SDK only passes _meta through.
+  // user attached in ChatGPT, and generation results open in the result viewer. With sign-in on, every tool
+  // runs as the signed-in user: ChatGPT reads that from each tool's securitySchemes; the SDK only passes _meta through.
   type ToolConfig = { title?: string; description?: string; inputSchema?: Record<string, ZodType>; _meta?: Record<string, unknown> };
   type Callback = Parameters<typeof acceptAttachedPhoto>[2];
   const tools: ToolDoc[] = [];
@@ -51,7 +52,9 @@ export function createLuwServer(config: LuwConfig, fetchImpl?: typeof fetch): Mc
   const register = server.registerTool.bind(server) as (name: string, tool: ToolConfig, cb: Callback) => unknown;
   server.registerTool = ((name: string, tool: ToolConfig, cb: Callback) => {
     tools.push({ name, title: tool.title, description: tool.description });
-    const [spec, call] = config.mode === "remote" ? acceptAttachedPhoto(name, tool, cb) : [tool, cb];
+    const remote = config.mode === "remote";
+    const [attachable, call] = remote ? acceptAttachedPhoto(name, tool, cb) : [tool, cb];
+    const spec = remote ? withResultViewer(name, attachable) : attachable;
     return register(name, signIn ? { ...spec, _meta: { ...spec._meta, securitySchemes: [{ type: "oauth2" }] } } : spec, call);
   }) as typeof server.registerTool;
 
@@ -67,6 +70,7 @@ export function createLuwServer(config: LuwConfig, fetchImpl?: typeof fetch): Mc
   if (local && sets.has("projects")) registerProjectTool(server, deps);
   if (sets.has("team")) registerTeamTool(server, deps);
   if (sets.has("generate")) registerPrompts(server);
+  if (!local && sets.has("generate")) registerResultViewer(server);
   registerResources(server, deps, { instructions: instructions(config), tools });
   return server;
 }

@@ -97,7 +97,8 @@ function expand(params: Params, variations = 1): Params[] {
 
 async function generate(ctx: ToolContext, label: string, params: Params, variations?: number, format?: FormatOptions) {
   const outcome = await runJobs(ctx, label, expand(params, variations));
-  return formatOutcome(ctx, outcome, format);
+  const source = typeof params.image === "string" ? params.image : undefined;
+  return formatOutcome(ctx, outcome, { source, ...format });
 }
 
 const GENERATE = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true } as const;
@@ -554,7 +555,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         throw new InputError(`size ${a.size} isn't available with the ${symphony ? "symphony" : "aria"} engine — use ${symphony ? "512 or 1024" : "512 or 768"}.`);
       }
       const image = await ctx.files.resolveOptional(a.image, { signal: ctx.signal });
-      return generate(ctx, "Pattern AI", { model: "pattern", image, ...common(a), texture });
+      return generate(ctx, "Pattern AI", { model: "pattern", image, ...common(a), texture }, undefined, { tile: true });
     }),
   );
 
