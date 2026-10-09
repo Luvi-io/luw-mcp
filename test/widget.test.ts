@@ -55,14 +55,14 @@ describe("result viewer", () => {
     expect(pattern.structuredContent).not.toHaveProperty("source");
   });
 
-  it("tells the model the result is already on screen, so it doesn't embed a broken image link", async () => {
+  it("tells the model the result is already on screen, so its reply doesn't add another image", async () => {
     const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://i.luvicdn.com/luwai/1/out.png" }));
     const remote = await connect(luw.fetch, { mode: "remote" });
     const result = await remote.call("luw_interior_design", { image: "https://luvicdn.net/img/room.jpg" });
-    expect(textOf(result)).toMatch(/^Shown to the user in the Luw\.ai result viewer/);
+    expect(textOf(result)).toMatch(/^The user already sees this result in the Luw\.ai viewer/);
     expect(textOf(result)).toContain("https://i.luvicdn.com/luwai/1/out.png");
 
     const local = await connect(luw.fetch);
-    expect(textOf(await local.call("luw_interior_design", { image: "https://luvicdn.net/img/room.jpg" }))).not.toContain("result viewer");
+    expect(textOf(await local.call("luw_interior_design", { image: "https://luvicdn.net/img/room.jpg" }))).not.toContain("Luw.ai viewer");
   });
 });
