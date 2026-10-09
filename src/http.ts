@@ -1,6 +1,7 @@
 import { webcrypto } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import { LATEST_PROTOCOL_VERSION, SUPPORTED_PROTOCOL_VERSIONS } from "@modelcontextprotocol/sdk/types.js";
 import { DOCS_URL, VERSION, type LuwConfig } from "./config.js";
 import { createLuwServer } from "./mcp-server.js";
 import { createOAuth } from "./oauth.js";
@@ -72,13 +73,25 @@ export function createFetchHandler(baseConfig: LuwConfig, fetchImpl?: typeof fet
     });
     try {
       await server.connect(transport);
-      const response = await transport.handleRequest(request);
+      const response = await transport.handleRequest(withKnownProtocolVersion(request));
       return withCors(onBodyDone(response, cleanup));
     } catch (error) {
       cleanup();
       throw error;
     }
   };
+}
+
+/**
+ * ChatGPT's MCP client sends an MCP-Protocol-Version newer than this SDK knows (2026-07-28), which the transport
+ * rejects with a bare 400. The methods it calls are unchanged, so answer them at the latest version we support.
+ */
+function withKnownProtocolVersion(request: Request): Request {
+  const version = request.headers.get("mcp-protocol-version");
+  if (!version || SUPPORTED_PROTOCOL_VERSIONS.includes(version)) return request;
+  const headers = new Headers(request.headers);
+  headers.set("mcp-protocol-version", LATEST_PROTOCOL_VERSION);
+  return new Request(request, { headers });
 }
 
 /** Accepts `Authorization: Bearer <key>`, `X-Luw-Api-Key: <key>`, or `?api_key=` for clients that can't set headers. */

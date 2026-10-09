@@ -51,6 +51,24 @@ describe("hosted HTTP server", () => {
     expect(luw.calls).toHaveLength(0);
   });
 
+  it("serves clients that send a protocol version newer than the SDK knows, as ChatGPT does", async () => {
+    const { handle } = setup();
+    const response = await handle(
+      new Request("http://mcp.test/mcp", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer user-key-123",
+          "Content-Type": "application/json",
+          Accept: "application/json, text/event-stream",
+          "MCP-Protocol-Version": "2026-07-28",
+        },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }),
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain("luw_interior_design");
+  });
+
   it("has health, CORS and method handling", async () => {
     const { handle } = setup();
     const health = await handle(new Request("http://mcp.test/health"));
