@@ -7,6 +7,7 @@
 - Tool descriptions start with the Luw.ai app name (Interior AI, Magic Prompt AI, Magic Wand AI, Fluw AI, …). Clients show titles but give models only descriptions, so "use Magic Prompt" didn't reach `luw_edit_image`.
 - A job that finishes with no output now says so (status `empty`) instead of a bare "finished"; Segment AI adds what to try when a prompt matched nothing.
 - Hosted `luw_upload_file` describes what it accepts there (data: URIs), instead of advertising local paths and URLs it refuses. Style examples use valid names ("Japandi" isn't one; use Japanese Design + Scandinavian).
+- Resources: `luw://account` (credit balance), `luw://history/{app}` (the 10 most recently updated projects in a Luw.ai app with their latest results, from the web app's paged listing), `luw://projects/{id}` (a project's items, with the real file behind each video, 3D or SVG thumbnail), `luw://catalog/{kind}` (the `luw_list_options` catalogs with previews) and `luw://guide` (every tool and its cost, built from the tool descriptions). Users attach them as context, e.g. `@luw:luw://account` in Claude Code.
 - README: the hosted server with sign-in is now the default setup; the one-click Cursor and VS Code buttons add it without a key (replacing 0.1.1's hosted Cursor link with a key header).
 
 ## 0.1.1

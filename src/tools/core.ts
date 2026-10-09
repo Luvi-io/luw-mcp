@@ -2,7 +2,7 @@ import { z } from "zod";
 import { errorMessage, type Params } from "../client.js";
 import { EXTERIOR_TYPES, INTERIOR_TYPES, MODEL_IDS, PROFESSIONS } from "../catalog.js";
 import { DOCS_URL } from "../config.js";
-import { handler, text, type Deps, type Server } from "../context.js";
+import { handler, text, type Deps, type Server, type ToolContext } from "../context.js";
 import { contentTypeForExtension, extensionForContentType, InputError } from "../files.js";
 import { formatOutcome, runJobs, type Outcome } from "../jobs.js";
 
@@ -103,43 +103,13 @@ export function registerCoreTools(server: Server, deps: Deps) {
         "Look up valid values for other Luw.ai tools: design_styles (styles param), interior_types (room_type), exterior_types (building_type), " +
         "video_styles (camera_motion), materials (Magic Wand material_image catalog), professions (persona profession). Free.",
       inputSchema: {
-        kind: z.enum(["design_styles", "interior_types", "exterior_types", "video_styles", "materials", "professions"]),
+        kind: z.enum(OPTION_KINDS),
         search: z.string().optional().describe("Case-insensitive filter on names/descriptions."),
         details: z.boolean().optional().describe("Include descriptions and preview image URLs (longer output)."),
       },
       annotations: { title: "List options", readOnlyHint: true, destructiveHint: false, openWorldHint: true },
     },
-    handler(deps, async (a, ctx) => {
-      const query = a.search?.trim().toLowerCase();
-      const match = (...fields: unknown[]) => !query || fields.some((x) => typeof x === "string" && x.toLowerCase().includes(query));
-
-      switch (a.kind) {
-        case "interior_types":
-        case "exterior_types":
-        case "professions": {
-          const list = (a.kind === "interior_types" ? INTERIOR_TYPES : a.kind === "exterior_types" ? EXTERIOR_TYPES : [...PROFESSIONS]).filter((n) => match(n));
-          return text(list.join("\n") || "No matches.", { items: list });
-        }
-        case "design_styles": {
-          const styles = await ctx.client.request<Params[]>("GET", "/styles", { query: { version: 2 }, auth: false, signal: ctx.signal });
-          const list = styles.filter((s) => match(s.name, s.description));
-          return listResult(list, a.details || Boolean(query), (s) => `${s.name}: ${s.description ?? ""}${a.details ? ` (${s.thumb_image ?? s.image})` : ""}`);
-        }
-        case "video_styles": {
-          const styles = await ctx.client.request<Params[]>("GET", "/video_styles", { auth: false, signal: ctx.signal });
-          const list = styles.filter((s) => match(s.name, s.prompt));
-          return listResult(list, a.details || Boolean(query), (s) => `${s.name}: ${s.prompt ?? ""}`);
-        }
-        case "materials": {
-          const body = await ctx.client.request<{ materials?: Params[] }>("GET", "/materials", { auth: ctx.client.hasApiKey, signal: ctx.signal });
-          const list = (body.materials ?? []).filter((m) => match(m.title, m.extra, m.info));
-          const lines = list.map((m) => `${m.title}${m.extra ? ` [${m.extra}]` : ""}: ${m.image}${a.details && m.thumb ? ` (thumb ${m.thumb})` : ""}`);
-          return text(lines.join("\n") || "No matches.", {
-            items: list.map((m) => ({ id: m.id, title: m.title, surfaces: m.extra, image: m.image, thumb: m.thumb })),
-          });
-        }
-      }
-    }),
+    handler(deps, (a, ctx) => listOptions(ctx, a.kind, a.search, a.details)),
   );
 
   server.registerTool(
@@ -169,6 +139,42 @@ export function registerCoreTools(server: Server, deps: Deps) {
       return formatOutcome(ctx, await runJobs(ctx, `Luw.ai ${a.model}`, [params]));
     }),
   );
+}
+
+export const OPTION_KINDS = ["design_styles", "interior_types", "exterior_types", "video_styles", "materials", "professions"] as const;
+export type OptionKind = (typeof OPTION_KINDS)[number];
+
+/** Valid values for other tools' parameters; shared by luw_list_options and the luw://catalog resources. */
+export async function listOptions(ctx: Pick<ToolContext, "client" | "signal">, kind: OptionKind, search?: string, details?: boolean) {
+  const query = search?.trim().toLowerCase();
+  const match = (...fields: unknown[]) => !query || fields.some((x) => typeof x === "string" && x.toLowerCase().includes(query));
+
+  switch (kind) {
+    case "interior_types":
+    case "exterior_types":
+    case "professions": {
+      const list = (kind === "interior_types" ? INTERIOR_TYPES : kind === "exterior_types" ? EXTERIOR_TYPES : [...PROFESSIONS]).filter((n) => match(n));
+      return text(list.join("\n") || "No matches.", { items: list });
+    }
+    case "design_styles": {
+      const styles = await ctx.client.request<Params[]>("GET", "/styles", { query: { version: 2 }, auth: false, signal: ctx.signal });
+      const list = styles.filter((s) => match(s.name, s.description));
+      return listResult(list, details || Boolean(query), (s) => `${s.name}: ${s.description ?? ""}${details ? ` (${s.thumb_image ?? s.image})` : ""}`);
+    }
+    case "video_styles": {
+      const styles = await ctx.client.request<Params[]>("GET", "/video_styles", { auth: false, signal: ctx.signal });
+      const list = styles.filter((s) => match(s.name, s.prompt));
+      return listResult(list, details || Boolean(query), (s) => `${s.name}: ${s.prompt ?? ""}`);
+    }
+    case "materials": {
+      const body = await ctx.client.request<{ materials?: Params[] }>("GET", "/materials", { auth: ctx.client.hasApiKey, signal: ctx.signal });
+      const list = (body.materials ?? []).filter((m) => match(m.title, m.extra, m.info));
+      const lines = list.map((m) => `${m.title}${m.extra ? ` [${m.extra}]` : ""}: ${m.image}${details && m.thumb ? ` (thumb ${m.thumb})` : ""}`);
+      return text(lines.join("\n") || "No matches.", {
+        items: list.map((m) => ({ id: m.id, title: m.title, surfaces: m.extra, image: m.image, thumb: m.thumb })),
+      });
+    }
+  }
 }
 
 function listResult(items: Params[], detailed: boolean, line: (item: Params) => string) {

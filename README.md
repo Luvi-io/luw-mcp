@@ -309,6 +309,18 @@ Built-in prompts show up as slash commands or prompt templates in your client: `
 
 Every generation uses your [Luw.ai credits](https://app.luw.ai/pricing). Variations are billed one generation each.
 
+## Resources
+
+Read-only context you can attach to a conversation. In Claude Code, type `@luw:` to pick one; other clients that support resources offer them as attachments.
+
+| Resource | What it holds |
+|---|---|
+| `luw://account` | Your credit balance |
+| `luw://history/{app}` | Your 10 most recently updated projects in one Luw.ai app (Interior, Exterior, Video, …) with their latest results: file links, prompts and source images |
+| `luw://projects/{id}` | One project: its folders and the file link of every item in it |
+| `luw://catalog/{kind}` | Design styles, room and building types, video camera motions, materials and persona professions, with previews |
+| `luw://guide` | Every tool and what it costs |
+
 ## How it works
 
 - **Local files just work.** Any image argument accepts an `https://` URL, a local path (`~/Desktop/room.jpg`), or a `data:` URI. Local files are uploaded to Luw.ai storage as temporary files (deleted after 12 hours) and cached for the session, so repeated edits don't upload the same file again.

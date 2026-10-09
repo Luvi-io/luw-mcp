@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { API_KEY_URL, SERVER_NAME, VERSION, type LuwConfig } from "./config.js";
 import { createDeps } from "./context.js";
 import { registerPrompts } from "./prompts.js";
+import { registerResources, type ToolDoc } from "./resources.js";
 import { registerArchiGptTool } from "./tools/archigpt.js";
 import { registerCoreTools } from "./tools/core.js";
 import { registerGenerateTools } from "./tools/generate.js";
@@ -38,13 +39,16 @@ export function createLuwServer(config: LuwConfig, fetchImpl?: typeof fetch): Mc
   const deps = createDeps(config, fetchImpl);
   const sets = config.toolsets;
 
-  // With sign-in on, every tool runs as the signed-in user. ChatGPT reads that from each tool's
-  // securitySchemes; the SDK only passes _meta through, which ChatGPT also reads.
-  if (config.mode === "remote" && config.oauthSecret) {
-    const register = server.registerTool.bind(server) as (name: string, tool: { _meta?: Record<string, unknown> }, cb: unknown) => unknown;
-    server.registerTool = ((name: string, tool: { _meta?: Record<string, unknown> }, cb: unknown) =>
-      register(name, { ...tool, _meta: { ...tool._meta, securitySchemes: [{ type: "oauth2" }] } }, cb)) as typeof server.registerTool;
-  }
+  // Records each tool for the luw://guide resource. With sign-in on, every tool also runs as the
+  // signed-in user: ChatGPT reads that from each tool's securitySchemes; the SDK only passes _meta through.
+  type ToolConfig = { title?: string; description?: string; _meta?: Record<string, unknown> };
+  const tools: ToolDoc[] = [];
+  const signIn = config.mode === "remote" && Boolean(config.oauthSecret);
+  const register = server.registerTool.bind(server) as (name: string, tool: ToolConfig, cb: unknown) => unknown;
+  server.registerTool = ((name: string, tool: ToolConfig, cb: unknown) => {
+    tools.push({ name, title: tool.title, description: tool.description });
+    return register(name, signIn ? { ...tool, _meta: { ...tool._meta, securitySchemes: [{ type: "oauth2" }] } } : tool, cb);
+  }) as typeof server.registerTool;
 
   if (sets.has("generate")) {
     registerGenerateTools(server, deps);
@@ -55,5 +59,6 @@ export function createLuwServer(config: LuwConfig, fetchImpl?: typeof fetch): Mc
   if (sets.has("projects")) registerProjectTool(server, deps);
   if (sets.has("team")) registerTeamTool(server, deps);
   if (sets.has("generate")) registerPrompts(server);
+  registerResources(server, deps, { instructions: instructions(config), tools });
   return server;
 }
