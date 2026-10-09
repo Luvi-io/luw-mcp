@@ -12,18 +12,18 @@ import { registerPersonaTool, registerProjectTool, registerTeamTool } from "./to
 import { registerResultViewer, withResultViewer } from "./widget.js";
 
 function instructions(config: LuwConfig): string {
-  const inputs =
-    config.mode === "local"
-      ? "Image inputs accept https:// URLs, local file paths or data: URIs — local files are uploaded to Luw.ai automatically."
-      : "Image inputs must be public https:// URLs or data: URIs (this hosted server can't read the user's local files); in ChatGPT, pass a photo the user attached as image_file.";
+  const local = config.mode === "local";
   return [
     "Luw.ai: AI tools for interior, exterior and landscape design, architectural rendering, image editing, video and 3D.",
-    inputs,
-    `Generations wait up to ${config.waitTimeoutSeconds}s. If a tool returns a processing_url instead of a result, call luw_get_result with it (repeat while it is still processing). Never re-run the generation — that spends credits again.`,
-    "Every generation spends the user's Luw.ai credits (variations multiply the cost); prefer 1 variation unless the user asks for options.",
-    "Use luw_list_options to get valid style, room type, camera motion and material names.",
-    "To change one exact area: luw_segment to get a mask, then luw_magic_wand (replace/remove/material) or luw_landscape_design.",
-    `Without an API key, calls fail with setup steps; keys are created at ${API_KEY_URL}.`,
+    local
+      ? "Image inputs accept https:// URLs, local file paths or data: URIs; local files are uploaded to Luw.ai automatically."
+      : "Image inputs are public https:// links or data: URIs; a photo attached in the chat goes in image_file. This hosted server can't read files on the user's computer.",
+    `Generations wait up to ${config.waitTimeoutSeconds}s. A tool that returns a processing_url is still running; luw_get_result collects it and can be called again while it runs. Running the generation again would use credits twice.`,
+    "Each generation uses credits from the user's Luw.ai account; variations multiply the cost.",
+    "luw_list_options lists valid style, room type, camera motion and material names.",
+    "To change one exact area, luw_segment returns a mask for luw_magic_wand or luw_landscape_design.",
+    // Hosted clients sign in to Luw.ai instead of handling keys.
+    ...(local ? [`Without an API key, calls fail with setup steps; keys are created at ${API_KEY_URL}.`] : []),
   ].join("\n");
 }
 
