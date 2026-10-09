@@ -27,7 +27,7 @@ describe("hosted HTTP server", () => {
     const { luw, handle } = setup();
     const client = await connectHttp(handle, { Authorization: "Bearer user-key-123" });
     const tools = await client.listTools();
-    expect(tools.tools.length).toBe(23);
+    expect(tools.tools.length).toBe(21);
 
     const result = await client.callTool({ name: "luw_render", arguments: { image: "https://e.com/a.jpg" } });
     expect(textOf(result as any)).toContain("https://cdn.test/h.png");
@@ -73,7 +73,7 @@ describe("Vercel function (api/mcp.ts)", () => {
     expect(await info.json()).toMatchObject({ mcp_endpoint: "https://mcp.test/mcp" });
 
     const client = await connectHttp((r) => vercel.fetch(r), { Authorization: "Bearer k" }, "/api/mcp");
-    expect((await client.listTools()).tools.length).toBe(23);
+    expect((await client.listTools()).tools.length).toBe(21);
     await client.close();
   });
 });

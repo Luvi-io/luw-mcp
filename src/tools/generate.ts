@@ -28,7 +28,7 @@ const f = {
     .string()
     .optional()
     .describe(`Style-transfer source: an image whose look to copy (${IMAGE_HINT}), or "persona" to use slot 1 of persona_id.`),
-  personaId: z.number().int().positive().optional().describe("Persona whose saved images/knowledge to use (see luw_personas)."),
+  personaId: z.number().int().positive().optional().describe("Persona whose saved images and style knowledge to use."),
   seed: z.number().int().min(0).optional().describe("Fix for reproducible results."),
   precision: z
     .number()

@@ -60,8 +60,11 @@ export function createLuwServer(config: LuwConfig, fetchImpl?: typeof fetch): Mc
     registerCoreTools(server, deps);
   }
   if (sets.has("archigpt")) registerArchiGptTool(server, deps);
-  if (sets.has("personas")) registerPersonaTool(server, deps);
-  if (sets.has("projects")) registerProjectTool(server, deps);
+  // The multi-action management tools are local-only: app directories (ChatGPT, Claude) list the hosted
+  // server and reject a tool that picks its operation from an argument. Projects stay readable there as resources.
+  const local = config.mode === "local";
+  if (local && sets.has("personas")) registerPersonaTool(server, deps);
+  if (local && sets.has("projects")) registerProjectTool(server, deps);
   if (sets.has("team")) registerTeamTool(server, deps);
   if (sets.has("generate")) registerPrompts(server);
   registerResources(server, deps, { instructions: instructions(config), tools });

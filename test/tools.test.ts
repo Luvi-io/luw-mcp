@@ -317,8 +317,6 @@ describe("file inputs", () => {
     expect(Object.keys(file.properties).sort()).toEqual(["download_url", "file_id", "file_name", "mime_type"]);
     expect(file.required.sort()).toEqual(["download_url", "file_id"]);
     expect(interior.inputSchema.required ?? []).not.toContain("image");
-    // Persona trainings store their image, and ChatGPT's download links expire.
-    expect(tools.find((t) => t.name === "luw_personas")!.inputSchema.properties).not.toHaveProperty("image_file");
 
     const local = (await (await connect(fakeLuw().fetch)).client.listTools()).tools.find((t) => t.name === "luw_interior_design")!;
     expect(local.inputSchema.properties).not.toHaveProperty("image_file");
@@ -537,11 +535,11 @@ describe("other tools", () => {
     expect(luw.generates()[0]!.json).toEqual({ model: "interior", image: "https://e.com/a.jpg", style_transfer: "persona", pid: 3, precise: 90 });
   });
 
-  it("keeps luw_run_model off the hosted server", async () => {
-    // App directories reject generic executors; the hosted server is what ChatGPT and Claude list.
+  it("keeps the generic executor and multi-action tools off the hosted server", async () => {
+    // App directories list the hosted server and reject generic executors and tools that pick an operation from an argument.
     const { client } = await connect(fakeLuw().fetch, { mode: "remote" });
     const names = (await client.listTools()).tools.map((t) => t.name);
-    expect(names).not.toContain("luw_run_model");
-    expect(names).toHaveLength(23);
+    for (const name of ["luw_run_model", "luw_personas", "luw_projects"]) expect(names).not.toContain(name);
+    expect(names).toHaveLength(21);
   });
 });

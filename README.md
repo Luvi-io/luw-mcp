@@ -306,8 +306,8 @@ Built-in prompts show up as slash commands or prompt templates in your client: `
 | `luw_list_options` | Valid styles, room and building types, camera motions, materials (free) | 0 |
 | `luw_upload_file` | Upload a file to Luw.ai storage and get a URL (free) | 0 |
 | `luw_run_model` | Call any Luw.ai model with raw [API parameters](https://luw-ai.gitbook.io/api) (local server only) | varies |
-| `luw_personas` | Personas: reusable style identity, training images and slots | 0 |
-| `luw_projects` | Projects (boards), folders and media | 0 |
+| `luw_personas` | Personas: reusable style identity, training images and slots (local server only) | 0 |
+| `luw_projects` | Projects (boards), folders and media (local server only; hosted: `luw://projects` resources) | 0 |
 | `luw_team` | Enterprise: credits, usage, members, invitations (opt-in) | 0 |
 
 Every generation uses your [Luw.ai credits](https://app.luw.ai/pricing). Variations are billed one generation each.
