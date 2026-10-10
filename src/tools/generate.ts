@@ -507,6 +507,8 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     },
     handler(deps, async (a, ctx) => {
       const image = await ctx.files.resolveOptional(a.image, { signal: ctx.signal });
+      // Fluw makes a new picture: a guide image isn't a "before", so the viewer shows the result alone.
+      const newPicture = { source: undefined };
       if (a.format === "svg") {
         return generate(
           ctx,
@@ -520,9 +522,10 @@ export function registerGenerateTools(server: Server, deps: Deps) {
             enhance_prompt: a.enhance_prompt ? "true" : undefined,
           },
           a.variations,
+          newPicture,
         );
       }
-      return generate(ctx, "Fluw AI", { model: "fluw", image, ...common(a), aspect_ratio: a.aspect_ratio }, a.variations);
+      return generate(ctx, "Fluw AI", { model: "fluw", image, ...common(a), aspect_ratio: a.aspect_ratio }, a.variations, newPicture);
     }),
   );
 

@@ -134,14 +134,17 @@ export async function formatOutcome(ctx: ToolContext, outcome: Outcome, options:
     if (extras.length) lines.push(JSON.stringify(extras.length === 1 ? extras[0] : extras, null, 2));
   }
 
+  const source = options.source && /^https?:\/\//i.test(options.source) ? options.source : undefined;
   if (pending.length) {
     if (lines.length) lines.push("");
     const percent = pending.map((p) => p.percent).filter((p): p is number => typeof p === "number");
     const progress = percent.length ? ` (${Math.round(percent.reduce((a, b) => a + b, 0) / percent.length)}%)` : "";
+    // luw_get_result only sees the processing_url; passing the source back keeps the before/after for long jobs.
+    const withSource = source ? ` and source_image ${source}` : "";
     lines.push(
       `${label} is still processing${progress} after ${seconds}s — this is normal for long jobs.`,
       ...pending.map((p) => `processing_url: ${p.processingUrl}`),
-      `Call luw_get_result with ${pending.length > 1 ? "each" : "this"} processing_url to collect the result. Do not re-run the generation; that would spend credits again.`,
+      `Call luw_get_result with ${pending.length > 1 ? "each" : "this"} processing_url${withSource} to collect the result. Do not re-run the generation; that would spend credits again.`,
     );
   }
 
@@ -161,7 +164,7 @@ export async function formatOutcome(ctx: ToolContext, outcome: Outcome, options:
     structuredContent: {
       status,
       outputs: urls,
-      ...(options.source && /^https?:\/\//i.test(options.source) && (urls.length || masks.length) ? { source: options.source } : {}),
+      ...(source && (urls.length || masks.length || pending.length) ? { source } : {}),
       ...(options.tile && urls.length ? { tile: true } : {}),
       ...(masks.length ? { masks } : {}),
       ...(texts.length ? { text: texts.join("\n") } : {}),

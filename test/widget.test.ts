@@ -53,6 +53,25 @@ describe("result viewer", () => {
     const pattern = await call("luw_generate_pattern", { prompt: "blue zellige tiles" });
     expect(pattern.structuredContent).toMatchObject({ tile: true });
     expect(pattern.structuredContent).not.toHaveProperty("source");
+
+    // Fluw makes a new picture: its guide image isn't a "before".
+    const fluw = await call("luw_generate_image", { prompt: "a villa", image: "https://luvicdn.net/img/guide.jpg" });
+    expect(fluw.structuredContent).not.toHaveProperty("source");
+  });
+
+  it("keeps the before/after for jobs collected later with luw_get_result", async () => {
+    const luw = fakeLuw()
+      .on("POST", "/generate", () => ({ status: true, processing: true, processing_url: "job_9", progress: { state: "processing", percent: 10 } }))
+      .on("POST", "/results", () => ({ status: true, processing: true, processing_url: "job_9", progress: { state: "processing", percent: 50 } }), 1)
+      .on("POST", "/results", () => ({ status: true, output: "https://i.luvicdn.com/luwai/1/render.png" }));
+    const { call } = await connect(luw.fetch, { mode: "remote", waitTimeoutSeconds: 0 });
+
+    const pending = await call("luw_sketch_to_render", { image: "https://luvicdn.net/img/sketch.png" });
+    expect(pending.structuredContent).toMatchObject({ status: "processing", processing_urls: ["job_9"], source: "https://luvicdn.net/img/sketch.png" });
+    expect(textOf(pending)).toContain("processing_url and source_image https://luvicdn.net/img/sketch.png");
+
+    const done = await call("luw_get_result", { processing_url: "job_9", source_image: "https://luvicdn.net/img/sketch.png" });
+    expect(done.structuredContent).toMatchObject({ status: "completed", outputs: ["https://i.luvicdn.com/luwai/1/render.png"], source: "https://luvicdn.net/img/sketch.png" });
   });
 
   it("tells the model the result is already on screen, so its reply doesn't add another image", async () => {

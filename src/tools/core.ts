@@ -18,6 +18,10 @@ export function registerCoreTools(server: Server, deps: Deps) {
         "Waits for the job to finish (up to the server's wait limit) — call again if it's still running. Free; never re-run a generation instead.",
       inputSchema: {
         processing_url: z.string().min(1).describe("The processing_url returned by a generation tool."),
+        source_image: z
+          .string()
+          .optional()
+          .describe("The source returned with that processing_url (the job's input image), so the result is shown before and after."),
         wait: z.boolean().optional().describe("Wait for completion (default true). false = check once and return immediately."),
       },
       annotations: { title: "Get result", readOnlyHint: true, destructiveHint: false, openWorldHint: true },
@@ -34,7 +38,7 @@ export function registerCoreTools(server: Server, deps: Deps) {
       if (state.done) outcome.completed.push({ index: 0, output: state.output });
       else outcome.pending.push({ index: 0, processingUrl: state.processingUrl, percent: state.percent });
       outcome.elapsedMs = Date.now() - started;
-      return formatOutcome(ctx, outcome);
+      return formatOutcome(ctx, outcome, { source: a.source_image });
     }),
   );
 
