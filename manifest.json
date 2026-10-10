@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "luw",
   "display_name": "Luw.ai",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "AI interior, exterior & landscape design, photoreal renders, image editing, video and 3D — right inside Claude.",
   "long_description": "The official Luw.ai extension. Redesign rooms and facades in any style, virtually stage empty rooms, turn sketches and 3D views into photorealistic renders, edit images with a sentence, swap materials, remove backgrounds or furniture, upscale, animate designs into cinematic videos, generate 3D models from photos, and ask ArchiGPT for expert architecture advice. Drop in local images — they are uploaded automatically — and see results right in the chat.",
   "author": {
