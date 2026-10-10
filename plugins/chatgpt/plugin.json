@@ -87,8 +87,8 @@
               "prompt": "What's the weather in Istanbul tomorrow?"
             },
             {
-              "description": "Purchase request: Luw.ai has no purchase action and shows no prices or checkout links, so no Luw.ai tool should run.",
-              "prompt": "Buy 500 Luw.ai credits for me."
+              "description": "Account management request: Luw.ai in ChatGPT only creates designs and has no delete action, so no Luw.ai tool should run.",
+              "prompt": "Delete all my Luw.ai projects."
             },
             {
               "description": "Writing task outside design: Luw.ai should not be called to write a cover letter.",
@@ -97,7 +97,8 @@
           ]
         },
         "commerce": false,
-        "commerce_description": "The plugin sells nothing inside ChatGPT and shows no prices, plans, upgrade prompts or checkout links. Generations use credits the user already has in their Luw.ai account."
+        "commerce_description": "The plugin sells nothing inside ChatGPT and shows no prices, plans, upgrade prompts or checkout links. Generations use credits the user already has in their Luw.ai account.",
+        "demo_recording_url": "https://youtu.be/lLNOQw4Ai1o"
       },
       "publication": {
         "countries": [],
