@@ -15,9 +15,10 @@ type ToolSpec = { _meta?: Record<string, unknown> };
 type Callback = (args: Record<string, unknown>, extra: unknown) => unknown;
 
 // Without this the model also tries to show the result in its reply: an image link renders as a broken image,
-// and a host's own image tool makes a different picture that isn't the Luw.ai result.
+// and the host's image tools or image search add pictures that aren't the Luw.ai result.
 const VIEWER_NOTE =
-  "The user already sees this result in the Luw.ai viewer above, with a before/after comparison and a full-size link, so the reply needs no image of it.";
+  "The user already sees this result in the Luw.ai viewer above, with a before/after comparison and a full-size link. " +
+  "Reply in text only: no image, image search or image link for this result.";
 
 /**
  * Links a tool to the result viewer. ChatGPT doesn't show images a tool returns (only the model sees them)
