@@ -42,13 +42,16 @@ jobs:
         run: npm run mcpb
 
       - name: GitHub release
-        run: gh release create "$GITHUB_REF_NAME" build/luw.mcpb --title "$GITHUB_REF_NAME" --generate-notes
+        # Skipped when it exists, so a re-run can get past it to the registry step.
+        run: gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" build/luw.mcpb --title "$GITHUB_REF_NAME" --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
 
       - name: Publish to the MCP Registry
         if: env.MCP_REGISTRY_KEY != ''
         run: |
+          # The registry checks the npm version exists, and npm takes a minute to serve a fresh publish.
+          for i in $(seq 30); do npm view "$(node -p 'require("./package.json").name')@${GITHUB_REF_NAME#v}" version >/dev/null 2>&1 && break; sleep 10; done
           curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
           ./mcp-publisher login dns --domain luw.ai --private-key "$MCP_REGISTRY_KEY"
           ./mcp-publisher publish
