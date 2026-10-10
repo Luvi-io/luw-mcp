@@ -3,7 +3,7 @@ import type { Server } from "./context.js";
 import { GENERATE_TOOL_NAMES } from "./tools/generate.js";
 
 /** Bump the version on breaking changes: hosts cache templates by URI. */
-export const RESULT_VIEWER_URI = "ui://luw/result-viewer-v1.html";
+export const RESULT_VIEWER_URI = "ui://luw/result-viewer-v2.html";
 
 // Tools whose results the viewer renders: every generation, and collecting a long-running one.
 const VIEWER_TOOLS = new Set<string>([...GENERATE_TOOL_NAMES, "luw_get_result"]);
@@ -109,6 +109,10 @@ video { display: block; width: 100%; background: #000; }
 .btn { border: 1px solid var(--line); background: transparent; color: var(--fg); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
 .btn:hover { background: var(--chip); }
 .note { display: flex; gap: 10px; align-items: center; padding: 14px; border-radius: 12px; background: var(--chip); }
+.working img { display: block; width: 100%; height: auto; filter: blur(2px) brightness(.6); }
+.working .label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.working .pill { display: flex; gap: 10px; align-items: center; padding: 9px 16px; border-radius: 999px; background: rgba(0,0,0,.6); color: #fff; font-weight: 600; }
+.working .spin { border-color: rgba(255,255,255,.35); border-top-color: #fff; }
 .spin { width: 16px; height: 16px; flex: none; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--fg); animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .masks { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
@@ -261,7 +265,15 @@ video { display: block; width: 100%; background: #000; }
     app.textContent = "";
     if (!result) { app.appendChild(note("Working on it with Luw.ai…", true)); return reportSize(); }
     if (result.status === "processing") {
-      app.appendChild(note("Still processing. Videos and 3D models take a few minutes; the result appears here once it's collected.", true));
+      // The input photo, dimmed, says what is being worked on; the result opens in a new viewer once it's collected.
+      if (isUrl(result.source) && kind(result.source) === "image") {
+        app.appendChild(el("div", { class: "frame working" }, [
+          image(result.source),
+          el("div", { class: "label" }, [el("div", { class: "pill" }, [el("span", { class: "spin" }), el("span", { text: "Luw.ai is working on it…" })])]),
+        ]));
+      } else {
+        app.appendChild(note("Luw.ai is working on it. Longer jobs take a few minutes.", true));
+      }
       return reportSize();
     }
     var outputs = (result.outputs || []).filter(isUrl);
