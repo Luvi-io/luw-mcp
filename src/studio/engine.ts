@@ -1,0 +1,134 @@
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { AssetInput } from "@pascal-app/core";
+import useScene from "@pascal-app/core/store";
+import { SceneBridge } from "@pascal-app/mcp/bridge";
+import { createSceneOperations } from "@pascal-app/mcp/operations";
+import { registerTools } from "@pascal-app/mcp/tools/index";
+import type { ZodType } from "zod";
+import type { Extra } from "../context.js";
+import type { SceneGraphJson } from "./projects.js";
+
+// Pascal's own MCP tools (@pascal-app/mcp, MIT), run headless on Pascal's core store: the same tools
+// editor.pascal.app's MCP offers and Luw Studio's assistant runs in the browser. Luw keeps no scene
+// between calls: each call loads its project's scene into the store, runs the tool and reads the
+// scene back out (tools.ts saves it). The store is one per process, so calls take turns.
+
+export type PascalToolConfig = {
+  title?: string;
+  description?: string;
+  inputSchema?: Record<string, ZodType>;
+  outputSchema?: Record<string, ZodType>;
+  annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean; idempotentHint?: boolean; openWorldHint?: boolean; title?: string };
+};
+type PascalCallback = (args: Record<string, unknown>, extra: Extra) => CallToolResult | Promise<CallToolResult>;
+export type PascalTool = { name: string; config: PascalToolConfig; callback: PascalCallback };
+
+interface Runtime {
+  bridge: SceneBridge;
+  tools: Map<string, PascalTool>;
+}
+
+let runtime: Runtime | null = null;
+/** The catalog the call in progress reads (a call's server may have its own catalog address). */
+let activeCatalog: () => Promise<readonly AssetInput[]> = async () => [];
+
+function pascal(): Runtime {
+  if (runtime) return runtime;
+  const bridge = new SceneBridge();
+  const operations = createSceneOperations({ bridge });
+  // A stand-in server that only collects what Pascal registers.
+  const collector = new McpServer({ name: "pascal-tools", version: "0" });
+  const tools = new Map<string, PascalTool>();
+  collector.registerTool = ((name: string, config: PascalToolConfig, callback: PascalCallback) => {
+    tools.set(name, { name, config, callback });
+    return { enable() {}, disable() {}, remove() {}, update() {} };
+  }) as unknown as McpServer["registerTool"];
+  registerTools(collector, operations, { catalog: () => activeCatalog() });
+  runtime = { bridge, tools };
+  return runtime;
+}
+
+export function pascalTools(): Map<string, PascalTool> {
+  return pascal().tools;
+}
+
+let turn: Promise<unknown> = Promise.resolve();
+
+/** One call at a time on the shared store. */
+function exclusive<T>(fn: () => Promise<T>): Promise<T> {
+  const run = turn.then(fn, fn);
+  turn = run.catch(() => {});
+  return run;
+}
+
+/** Lets what the store queues on a frame or a timer (dirty marks, normalisation) settle. */
+const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+function snapshot(bridge: SceneBridge): SceneGraphJson {
+  return bridge.exportJSON() as unknown as SceneGraphJson;
+}
+
+export interface SceneRun {
+  result: CallToolResult;
+  changed: boolean;
+  /** The scene after the call, with the stored scene's other top-level keys kept. */
+  graph: SceneGraphJson;
+}
+
+/** Runs one Pascal tool on a scene and reports whether it changed the scene. */
+export function runOnScene(
+  graph: SceneGraphJson,
+  tool: PascalTool,
+  args: Record<string, unknown>,
+  extra: Extra,
+  catalog: () => Promise<readonly AssetInput[]>,
+): Promise<SceneRun> {
+  const { bridge } = pascal();
+  return exclusive(async () => {
+    activeCatalog = catalog;
+    // Nothing of the last call's project may remain: loadDefault keeps a scene already in the store,
+    // and setScene keeps the plugin state of a scene that names none.
+    useScene.getState().unloadScene();
+    bridge.loadJSON(graph as never);
+    await settle();
+    // Nothing before this call can be undone through it.
+    useScene.temporal.getState().clear();
+    const before = JSON.stringify(snapshot(bridge));
+    const result = await call(tool, args, extra);
+    await settle();
+    const after = snapshot(bridge);
+    const changed = JSON.stringify(after) !== before;
+    return { result, changed, graph: { ...graph, ...after } };
+  });
+}
+
+/** Pascal's starting scene for an empty project: a site, a building and one level. */
+export function defaultScene(): Promise<SceneGraphJson> {
+  const { bridge } = pascal();
+  return exclusive(async () => {
+    useScene.getState().unloadScene();
+    bridge.loadDefault();
+    await settle();
+    return snapshot(bridge);
+  });
+}
+
+/** A tool that throws (Pascal's tools throw McpError for bad requests) answers with the error, as Pascal's server does. */
+async function call(tool: PascalTool, args: Record<string, unknown>, extra: Extra): Promise<CallToolResult> {
+  try {
+    return await tool.callback(args, extra);
+  } catch (error) {
+    const message = error instanceof Error ? error.message.replace(/^MCP error -?\d+: /, "") : String(error);
+    return { content: [{ type: "text", text: message }], isError: true };
+  }
+}
+
+/** Building content in a scene: everything but the site, building and level scaffold. */
+export function contentCount(graph: SceneGraphJson | null): number {
+  if (!graph) return 0;
+  return Object.values(graph.nodes).filter((node) => {
+    const type = (node as { type?: unknown })?.type;
+    return type !== "site" && type !== "building" && type !== "level";
+  }).length;
+}

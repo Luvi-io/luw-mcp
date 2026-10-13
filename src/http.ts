@@ -46,12 +46,14 @@ export function createFetchHandler(baseConfig: LuwConfig, fetchImpl?: typeof fet
         name: "Luw.ai MCP server",
         version: VERSION,
         mcp_endpoint: `${url.origin}/mcp`,
+        studio_endpoint: `${url.origin}/studio`,
         auth: oauth ? "OAuth (sign in to Luw.ai) or Authorization: Bearer <LUW_API_KEY>" : "Authorization: Bearer <LUW_API_KEY>",
         docs: "https://github.com/Luvi-io/luw-mcp",
         api_docs: DOCS_URL,
       });
     }
-    if (url.pathname !== "/mcp") return jsonResponse({ error: "not_found" }, 404);
+    // /studio: the same server with the Luw Studio project tools added.
+    if (url.pathname !== "/mcp" && url.pathname !== "/studio") return jsonResponse({ error: "not_found" }, 404);
     if (request.method !== "POST") {
       // Stateless server: no standalone SSE stream (GET) and no sessions to delete (DELETE).
       return withCors(new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers: { Allow: "POST, OPTIONS", "Content-Type": "application/json" } }));
@@ -60,7 +62,8 @@ export function createFetchHandler(baseConfig: LuwConfig, fetchImpl?: typeof fet
     const apiKey = apiKeyFrom(request, url);
     if (!apiKey && oauth) return withCors(oauth.unauthorized(url));
     const authChallenge = oauth?.rejectedKeyChallenge(url);
-    const server = createLuwServer({ ...baseConfig, apiKey, mode: "remote", authChallenge }, fetchImpl);
+    const toolsets = url.pathname === "/studio" ? new Set([...baseConfig.toolsets, "studio" as const]) : baseConfig.toolsets;
+    const server = createLuwServer({ ...baseConfig, apiKey, mode: "remote", authChallenge, toolsets }, fetchImpl);
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       maxRequestBodySize: MAX_BODY_BYTES,

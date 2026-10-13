@@ -1,6 +1,6 @@
 {
   "name": "@luw-ai/mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Official Luw.ai MCP server: AI interior, exterior, landscape, render, video and 3D design tools for Claude, Cursor, VS Code, Windsurf and any MCP client.",
   "mcpName": "ai.luw/mcp",
   "license": "MIT",
@@ -37,7 +37,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "build": "node scripts/build.mjs",
@@ -55,10 +55,12 @@
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
+    "@pascal-app/core": "file:vendor/pascal-app-core-1.0.4-luw.tgz",
+    "@pascal-app/mcp": "file:vendor/pascal-app-mcp-1.0.4-luw.tgz",
     "@types/node": "^18.19.130",
     "esbuild": "^0.25.12",
     "typescript": "^5.9.3",
     "vitest": "^3.2.7",
-    "zod": "^4.6.5"
+    "zod": "~4.5.4"
   }
 }

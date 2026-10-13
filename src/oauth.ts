@@ -213,6 +213,12 @@ export function createOAuth(options: OAuthOptions) {
           ? json({ resource: `${url.origin}/mcp`, authorization_servers: [url.origin], bearer_methods_supported: ["header"], resource_name: "Luw.ai" })
           : null;
       }
+      // The Studio endpoint (/studio) is the same server with the studio tools added; same sign-in.
+      if (path === "/.well-known/oauth-protected-resource/studio") {
+        return method === "GET"
+          ? json({ resource: `${url.origin}/studio`, authorization_servers: [url.origin], bearer_methods_supported: ["header"], resource_name: "Luw.ai Studio" })
+          : null;
+      }
       if (path === "/.well-known/oauth-authorization-server") return method === "GET" ? json(metadata(url.origin)) : null;
       if (path === "/register" && method === "POST") return register(request);
       if (path === "/authorize" && method === "GET") return authorize(url);
@@ -220,7 +226,7 @@ export function createOAuth(options: OAuthOptions) {
       return null;
     },
 
-    /** 401 for a keyless /mcp call: tells the client where to start signing in. */
+    /** 401 for a keyless /mcp or /studio call: tells the client where to start signing in. */
     unauthorized(url: URL): Response {
       return json({ error: "unauthorized", error_description: "Sign in to Luw.ai, or send an API key as Authorization: Bearer <key>." }, 401, {
         "WWW-Authenticate": challenge(url),
@@ -237,7 +243,8 @@ export function createOAuth(options: OAuthOptions) {
 export type OAuth = ReturnType<typeof createOAuth>;
 
 function challenge(url: URL, error?: string, description?: string): string {
-  const parts = [`resource_metadata="${url.origin}/.well-known/oauth-protected-resource/mcp"`];
+  const resource = url.pathname === "/studio" ? "studio" : "mcp";
+  const parts = [`resource_metadata="${url.origin}/.well-known/oauth-protected-resource/${resource}"`];
   if (error) parts.push(`error="${error}"`);
   if (description) parts.push(`error_description="${description}"`);
   return `Bearer ${parts.join(", ")}`;

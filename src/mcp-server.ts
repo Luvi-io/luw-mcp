@@ -9,6 +9,7 @@ import { registerArchiGptTool } from "./tools/archigpt.js";
 import { registerCoreTools } from "./tools/core.js";
 import { registerGenerateTools } from "./tools/generate.js";
 import { registerPersonaTool, registerProjectTool, registerTeamTool } from "./tools/workspace.js";
+import { registerStudioTools, STUDIO_GUIDE_URI } from "./studio/tools.js";
 import { registerResultViewer, withResultViewer } from "./widget.js";
 
 function instructions(config: LuwConfig): string {
@@ -22,6 +23,11 @@ function instructions(config: LuwConfig): string {
     "Each generation uses credits from the user's Luw.ai account; variations multiply the cost.",
     "luw_list_options lists valid style, room type, camera motion and material names.",
     "To change one exact area, luw_segment returns a mask for luw_magic_wand or luw_landscape_design.",
+    ...(config.toolsets.has("studio")
+      ? [
+          `Luw Studio (3D building design): luw_studio_list_projects finds the user's projects; every scene tool takes a project_id and saves its change to that project, which an open Studio tab shows. Read ${STUDIO_GUIDE_URI} before building.`,
+        ]
+      : []),
     // Hosted clients sign in to Luw.ai instead of handling keys.
     ...(local ? [`Without an API key, calls fail with setup steps; keys are created at ${API_KEY_URL}.`] : []),
   ].join("\n");
@@ -69,6 +75,7 @@ export function createLuwServer(config: LuwConfig, fetchImpl?: typeof fetch): Mc
   if (local && sets.has("personas")) registerPersonaTool(server, deps);
   if (local && sets.has("projects")) registerProjectTool(server, deps);
   if (sets.has("team")) registerTeamTool(server, deps);
+  if (sets.has("studio")) registerStudioTools(server, deps);
   if (sets.has("generate")) registerPrompts(server);
   if (!local && sets.has("generate")) registerResultViewer(server);
   registerResources(server, deps, { instructions: instructions(config), tools });

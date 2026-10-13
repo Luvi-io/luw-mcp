@@ -6,8 +6,11 @@ export const API_KEY_URL = "https://app.luw.ai/dashboard/api";
 export const PRICING_URL = "https://app.luw.ai/pricing";
 export const DOCS_URL = "https://luw-ai.gitbook.io/api";
 export const CONNECT_URL = "https://app.luw.ai/mcp/connect";
+export const STUDIO_URL = "https://studio.luw.ai";
+/** Luw Studio's item catalog (Pascal's library and Luw's pieces), which the studio tools place from. */
+export const STUDIO_CATALOG_URL = `${STUDIO_URL}/api/catalog`;
 
-export const TOOLSETS = ["generate", "archigpt", "personas", "projects", "team"] as const;
+export const TOOLSETS = ["generate", "archigpt", "personas", "projects", "team", "studio"] as const;
 export type Toolset = (typeof TOOLSETS)[number];
 const DEFAULT_TOOLSETS: Toolset[] = ["generate", "archigpt", "personas", "projects"];
 
@@ -36,6 +39,8 @@ export interface LuwConfig {
   authChallenge?: string;
   /** Served at /.well-known/openai-apps-challenge for ChatGPT app directory domain verification. */
   openaiAppsChallenge?: string;
+  /** Where the studio tools read Luw Studio's item catalog; empty uses the built-in list. */
+  studioCatalogUrl: string;
 }
 
 type Env = Record<string, string | undefined>;
@@ -55,6 +60,7 @@ export function loadConfig(rawEnv: Env = process.env, overrides: Partial<LuwConf
     oauthSecret: oauthSecret(env.LUW_MCP_OAUTH_SECRET),
     oauthConnectUrl: env.LUW_MCP_CONNECT_URL?.trim() || CONNECT_URL,
     openaiAppsChallenge: env.OPENAI_APPS_CHALLENGE?.trim() || undefined,
+    studioCatalogUrl: env.LUW_STUDIO_CATALOG_URL === undefined ? STUDIO_CATALOG_URL : env.LUW_STUDIO_CATALOG_URL.trim(),
     ...overrides,
   };
 }

@@ -48,7 +48,7 @@ describe("tool registry", () => {
 
   it("rejects unknown toolsets", () => {
     expect(() => parseToolsets("generate,nope")).toThrow(/nope/);
-    expect(parseToolsets("all").size).toBe(5);
+    expect(parseToolsets("all").size).toBe(6);
   });
 
   it("marks read-only tools", async () => {

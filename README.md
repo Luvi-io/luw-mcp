@@ -312,6 +312,25 @@ Built-in prompts show up as slash commands or prompt templates in your client: `
 
 Every generation uses your [Luw.ai credits](https://app.luw.ai/pricing). Variations are billed one generation each.
 
+## Luw Studio: edit your 3D projects
+
+[Luw Studio](https://studio.luw.ai) designs buildings in 3D. With the studio tools, your assistant edits your Studio projects directly: rooms, walls, doors and windows, stairs, roofs, furniture and finishes. Each edit is saved to the project as it is made, and a Studio tab that has the project open shows it within seconds.
+
+- **Hosted:** add `https://mcp.luw.ai/studio` instead of `/mcp` (same sign-in). It has every hosted tool plus the studio tools.
+- **Local:** add `studio` to `LUW_TOOLSETS`, e.g. `LUW_TOOLSETS=generate,archigpt,personas,projects,studio`.
+
+*"In my Luw Studio project Beach House, add a 3×4 m bedroom east of the living room with a window, and furnish it."*
+
+| Tool | What it does |
+|---|---|
+| `luw_studio_list_projects` | Your Studio projects, newest first, with each `project_id` and Studio link |
+| `luw_studio_create_project` | A new project: an empty site, or a starter house (`list_templates`) |
+| `luw_studio_rename_project` | Rename a project |
+| `luw_studio_undo` | Put back the scene from before the last assistant edit (again: redo) |
+| Scene tools | Pascal's editor tools, each taking a `project_id`: read (`get_level_summary`, `get_zones`, `get_walls`, `find_nodes`, `measure`, `verify_scene`, …) and build (`create_story_shell`, `create_room`, `add_wall`, `add_door`, `add_window`, `create_stair`, `create_roof`, `furnish_room`, `place_items`, `paint`, `apply_patch`, …) |
+
+The scene tools are [Pascal](https://github.com/pascalorg/editor)'s open-source MCP tools (MIT), running on the same core as Luw Studio, with its catalog (Luw's own pieces included) and its defaults. They don't use credits. A project last saved by the previous Luw Studio is readable; open it once in Studio to edit it here. `luw://studio/guide` is the building guide the assistant reads first.
+
 ## Resources
 
 Read-only context you can attach to a conversation. In Claude Code, type `@luw:` to pick one; other clients that support resources offer them as attachments.
@@ -331,7 +350,7 @@ Read-only context you can attach to a conversation. In Claude Code, type `@luw:`
 - **Long jobs don't time out.** A call waits up to 50 seconds and streams progress to clients that show it. If a job like a video takes longer, the tool returns a `processing_url` and the assistant collects it with `luw_get_result`, without generating (or paying) twice.
 - **Never billed twice.** Every generation request carries an `Idempotency-Key`, so if a network error forces a retry, Luw.ai returns the original job instead of charging again.
 - **Masks are handled for you.** `luw_segment` returns masks as URLs, so *"change the floor"* becomes segment ⟶ magic wand with no manual masking.
-- **Fast startup.** The package is one bundled file with zero dependencies, so `npx` downloads a single ~260 KB package and starts right away.
+- **Fast startup.** The package is one bundled file with zero dependencies, so `npx` downloads a single ~0.9 MB package and starts right away.
 
 ## Configuration
 
@@ -339,7 +358,8 @@ Read-only context you can attach to a conversation. In Claude Code, type `@luw:`
 |---|---|---|
 | `LUW_API_KEY` | (required) | Your API key ([get one](https://app.luw.ai/dashboard/api)). `LUW_API_TOKEN` also works. |
 | `LUW_OUTPUT_DIR` | (off) | Also download results (images, videos, GLB, SVG) into this folder |
-| `LUW_TOOLSETS` | all except `team` | Comma-separated list from `generate`, `archigpt`, `personas`, `projects`, `team`, or `all` |
+| `LUW_TOOLSETS` | all except `team` and `studio` | Comma-separated list from `generate`, `archigpt`, `personas`, `projects`, `team`, `studio`, or `all` |
+| `LUW_STUDIO_CATALOG_URL` | `https://studio.luw.ai/api/catalog` | Where the studio tools read Luw Studio's item catalog; empty uses the built-in list |
 | `LUW_WAIT_TIMEOUT_SECONDS` | `50` | How long a call waits before returning a `processing_url`. Raise it for clients with long tool timeouts, such as Claude Code. |
 | `LUW_INLINE_IMAGES` | `true` | Embed result images in tool output |
 | `LUW_API_BASE_URL` | `https://api.luw.ai/v2` | API endpoint override |
@@ -368,6 +388,7 @@ npm run inspector      # try every tool in the MCP Inspector
 LUW_API_KEY=... npm run smoke            # live checks against the real API (free)
 LUW_API_KEY=... npm run smoke -- --paid  # plus one real generation (1 credit)
 npm run mcpb           # build/luw.mcpb, the Claude Desktop extension
+node scripts/vendor-pascal.mjs ../luwstudio2  # rebuild vendor/: Pascal core + MCP as Luw Studio runs them
 ```
 
 ## Support
