@@ -12,6 +12,13 @@ const PROFESSION = "Studio";
 const MAIN_SLOT = 8;
 /** The scene before the last assistant edit, which luw_studio_undo swaps back in. */
 const UNDO_SLOT = 1009;
+/**
+ * The assistant's session on the project: its checkpoints and what it made, which Pascal's server
+ * keeps for as long as a client stays connected. This server keeps no connection, so a session lasts
+ * while the assistant keeps working: an hour without a call starts the next one afresh.
+ */
+const SESSION_SLOT = 1011;
+const SESSION_IDLE_MS = 60 * 60 * 1000;
 /** What Studio writes into a scene it saved; a scene without it is a 0.9 Studio ("legacy") project. */
 export const SCENE_FORMAT = "pascal-1";
 /**
@@ -34,6 +41,8 @@ export interface StudioProject {
   mainTrainingId: number | null;
   /** Scene before the last assistant edit, '' when there is none. */
   undoRaw: string;
+  /** The assistant's session as stored, or null when none is running (see SESSION_SLOT). */
+  session: unknown;
 }
 
 export type StoredScene = { kind: "empty" } | { kind: "scene"; graph: SceneGraphJson; legacy: boolean };
@@ -115,7 +124,27 @@ export async function loadProject(ctx: ToolContext, projectId: number): Promise<
     raw: main?.extras ?? "",
     mainTrainingId: main?.id ?? null,
     undoRaw: persona.trainings?.find((t) => t.slot === UNDO_SLOT)?.extras ?? "",
+    session: liveSession(persona.trainings?.find((t) => t.slot === SESSION_SLOT)?.extras),
   };
+}
+
+function liveSession(stored: string | null | undefined): unknown {
+  if (!stored) return null;
+  try {
+    const { at, record } = JSON.parse(stored) as { at?: unknown; record?: unknown };
+    return typeof at === "number" && Date.now() - at < SESSION_IDLE_MS ? record : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Keeps the assistant's session with the project, for its next call. */
+export async function saveSession(ctx: ToolContext, projectId: number, record: unknown): Promise<void> {
+  await ctx.client.request("POST", `/personas/${projectId}/trainings`, {
+    json: { slot: SESSION_SLOT, info: "Assistant session: checkpoints and what it made", extras: JSON.stringify({ at: Date.now(), record }) },
+    signal: ctx.signal,
+    timeoutMs: 120_000,
+  });
 }
 
 /** The stored scene, read the way Studio reads it (scene-format.ts). */

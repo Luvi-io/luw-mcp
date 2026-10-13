@@ -44,7 +44,9 @@ function studioProject(initial: Training[] = [], opts: { profession?: string } =
     luw,
     trainings,
     persona,
-    writes: () => luw.calls.filter((c) => c.method !== "GET"),
+    /** Writes to the project's scene (the assistant's session, slot 1011, travels with every call). */
+    writes: () => luw.calls.filter((c) => c.method !== "GET" && c.json?.slot !== 1011),
+    session: () => (trainings.get(1011) ? JSON.parse(trainings.get(1011)!.extras) : null),
     studioSavesBeforeNextCheck: (extras: string) => {
       studioSave = extras;
     },
@@ -73,10 +75,10 @@ describe("studio toolset", () => {
     const { client } = await connect(fakeLuw().fetch, {}, STUDIO);
     const tools = (await client.listTools()).tools;
     const names = tools.map((t) => t.name);
-    for (const name of ["luw_studio_list_projects", "luw_studio_create_project", "luw_studio_rename_project", "luw_studio_undo", "create_room", "furnish_room", "add_door", "get_level_summary", "paint", "get_site", "place_building", "add_fence", "run_batch"]) {
+    for (const name of ["luw_studio_list_projects", "luw_studio_create_project", "luw_studio_rename_project", "luw_studio_undo", "create_room", "furnish_room", "add_door", "get_level_summary", "paint", "get_site", "place_building", "add_fence", "run_batch", "set_checkpoint"]) {
       expect(names).toContain(name);
     }
-    for (const name of ["add_object", "view_scene", "clear_scene", "undo", "redo", "export_glb", "save_scene", "load_scene", "set_checkpoint"]) {
+    for (const name of ["add_object", "view_scene", "clear_scene", "undo", "redo", "export_glb", "save_scene", "load_scene"]) {
       expect(names).not.toContain(name);
     }
     const sceneTools = tools.filter((t) => !t.name.startsWith("luw_"));
@@ -103,6 +105,8 @@ describe("studio toolset", () => {
     const levels = JSON.parse(textOf(await call("list_levels", { project_id: 7 })));
     // The starting scene is saved on first use, so its ids hold from one call to the next.
     expect(p.writes().map((c) => [c.method, c.json.slot])).toEqual([["POST", 8]]);
+    // The assistant's session began with this call: its start is the scene it found.
+    expect(Object.keys(p.session().record.checkpoints)).toEqual(["start"]);
     expect(ofType(p.trainings.get(8)!.extras, "level")).toHaveLength(1);
     const levelId = levels.levels?.[0]?.id ?? levels[0]?.id;
     const result = await call("add_wall", { project_id: 7, levelId, start: [0, 0], end: [4, 0] });
@@ -209,6 +213,35 @@ describe("studio toolset", () => {
     const saved = p.trainings.get(8)!.extras;
     expect(ofType(saved, "wall").length).toBe(8);
     expect(ofType(saved, "door")).toHaveLength(1);
+  });
+
+  it("keeps the assistant's checkpoints from call to call, as Pascal's server does for a connection", async () => {
+    const base = await sceneWithWall();
+    const p = studioProject([{ id: 1, slot: 8, extras: base }]);
+    const { call } = await connect(p.luw.fetch, {}, STUDIO);
+    const wall = ofType(base, "wall")[0]!;
+    const checkpoint = await call("set_checkpoint", { project_id: 7, name: "before the second wall" });
+    expect(checkpoint.isError, textOf(checkpoint)).toBeFalsy();
+    expect(p.writes()).toHaveLength(0); // a checkpoint changes nothing in the scene
+    const added = await call("add_wall", { project_id: 7, levelId: wall.parentId, start: [4, 0], end: [4, 3] });
+    const wallId = JSON.parse((added.content[0] as { text: string }).text).wallId as string;
+    const verified = await call("verify_scene", { project_id: 7, since: "before the second wall" });
+    expect(verified.isError, textOf(verified)).toBeFalsy();
+    expect(textOf(verified)).toContain(wallId);
+    const session = p.session();
+    expect(Object.keys(session.record.checkpoints).sort()).toEqual(["before the second wall", "start"]);
+    expect(session.record.made.map((m: { id: string }) => m.id)).toContain(wallId);
+  });
+
+  it("starts a new session after an hour without a call", async () => {
+    const base = await sceneWithWall();
+    const p = studioProject([{ id: 1, slot: 8, extras: base }]);
+    const { call } = await connect(p.luw.fetch, {}, STUDIO);
+    await call("set_checkpoint", { project_id: 7, name: "yesterday" });
+    p.trainings.get(1011)!.extras = JSON.stringify({ ...p.session(), at: Date.now() - 2 * 60 * 60 * 1000 });
+    const stale = await call("verify_scene", { project_id: 7, since: "yesterday" });
+    expect(stale.isError).toBe(true);
+    expect(textOf(stale)).toContain("checkpoint_not_found");
   });
 
   it("creates a project from a template", async () => {

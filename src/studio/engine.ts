@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AssetInput } from "@pascal-app/core";
+import { parseSessionRecord, recordMade, type SceneNodes } from "@pascal-app/core/agent-operations";
 import useScene from "@pascal-app/core/store";
 import { SceneBridge } from "@pascal-app/mcp/bridge";
 import { createSceneOperations } from "@pascal-app/mcp/operations";
@@ -11,8 +12,9 @@ import type { SceneGraphJson } from "./projects.js";
 
 // Pascal's own MCP tools (@pascal-app/mcp, MIT), run headless on Pascal's core store: the same tools
 // editor.pascal.app's MCP offers and Luw Studio's assistant runs in the browser. Luw keeps no scene
-// between calls: each call loads its project's scene into the store, runs the tool and reads the
-// scene back out (tools.ts saves it). The store is one per process, so calls take turns.
+// between calls: each call loads its project's scene and the assistant's session (its checkpoints and
+// what it made, which Pascal's server keeps for a connection) into the store, runs the tool and reads
+// both back out (tools.ts saves them). The store is one per process, so calls take turns.
 
 export type PascalToolConfig = {
   title?: string;
@@ -74,15 +76,21 @@ export interface SceneRun {
   changed: boolean;
   /** The scene after the call, with the stored scene's other top-level keys kept. */
   graph: SceneGraphJson;
+  /** The assistant's session after the call (Pascal's session record). */
+  session: unknown;
 }
 
-/** Runs one Pascal tool on a scene and reports whether it changed the scene. */
+/**
+ * Runs one Pascal tool on a scene, inside the assistant's session (`session` as stored; anything
+ * that isn't a session record starts an empty one), and reports whether it changed the scene.
+ */
 export function runOnScene(
   graph: SceneGraphJson,
   tool: PascalTool,
   args: Record<string, unknown>,
   extra: Extra,
   catalog: () => Promise<readonly AssetInput[]>,
+  session?: unknown,
 ): Promise<SceneRun> {
   const { bridge } = pascal();
   return exclusive(async () => {
@@ -91,15 +99,26 @@ export function runOnScene(
     // and setScene keeps the plugin state of a scene that names none.
     useScene.getState().unloadScene();
     bridge.loadJSON(graph as never);
+    // After the load, which starts an empty session.
+    bridge.agentSession.replace(parseSessionRecord(session));
     await settle();
     // Nothing before this call can be undone through it.
     useScene.temporal.getState().clear();
     const before = JSON.stringify(snapshot(bridge));
-    const result = await call(tool, args, extra);
+    // As Pascal's server runs every tool: the session's start is taken on its first call, and what a
+    // call created joins what the assistant made (verify_scene reads both).
+    const result = await recordMade(
+      {
+        getNodes: () => useScene.getState().nodes as SceneNodes,
+        readSession: () => bridge.agentSession.read(),
+        keep: (keep) => bridge.agentSession.keep(keep),
+      },
+      () => call(tool, args, extra),
+    );
     await settle();
     const after = snapshot(bridge);
     const changed = JSON.stringify(after) !== before;
-    return { result, changed, graph: { ...graph, ...after } };
+    return { result, changed, graph: { ...graph, ...after }, session: bridge.agentSession.read() };
   });
 }
 

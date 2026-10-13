@@ -13,6 +13,7 @@ import {
   parseScene,
   renameProject,
   saveScene,
+  saveSession,
   SceneChangedError,
   type SceneGraphJson,
   serializeScene,
@@ -33,7 +34,6 @@ import {
  * - clear_scene: empties the project; that is done in Studio.
  * - undo, redo: history lives one call long here; luw_studio_undo undoes an edit.
  * - create_house_from_brief: it creates and publishes a Pascal project.
- * - set_checkpoint: its checkpoints live in the agent's session, which here lasts one call.
  */
 const LEFT_OUT = new Set([
   "add_object",
@@ -45,11 +45,28 @@ const LEFT_OUT = new Set([
   "undo",
   "redo",
   "create_house_from_brief",
-  "set_checkpoint",
 ]);
 
 /** Tools that replace the whole scene: only for a project with nothing built in it. */
 const REPLACES_SCENE = new Set(["create_from_template"]);
+
+/**
+ * Inputs Pascal's operations read that its open package leaves out of the tool's schema: a host
+ * adds them (core's extendVerifyScene, which Pascal's hosted app uses and core doesn't export).
+ */
+const HOST_INPUTS: Record<string, { input: Record<string, ZodType>; description: string }> = {
+  verify_scene: {
+    input: {
+      since: z
+        .string()
+        .min(1)
+        .optional()
+        .describe("A checkpoint's name (set_checkpoint, or \"start\"): also list what changed after it."),
+    },
+    description:
+      "With since: a checkpoint's name, it also lists what was created, changed and deleted after that checkpoint, by level and kind, and what you made that is gone.",
+  },
+};
 
 /** Inputs that only mean something with Pascal's own project store. */
 const STORE_INPUTS: Record<string, string[]> = { create_from_template: ["save", "projectId", "name"] };
@@ -83,6 +100,7 @@ function guide(): string {
     "4. Build with the semantic tools: `create_story_shell`, `create_room`, `add_door`, `add_window`, `furnish_room`, `place_items`, `paint`, `create_roof`.",
     "5. Check with `verify_scene` and `validate_scene`, then give the user the project's `studio_url`.",
     "6. `luw_studio_undo` puts back the scene from before the last edit made through these tools; calling it again redoes that edit.",
+    "7. `set_checkpoint` names a moment before a big step (a floor, the roof); `verify_scene({ since })` then lists what changed after it. Checkpoints stay with the project while you keep working; after an hour without a call the next session starts afresh.",
     "",
     "A Studio tab that has the project open shows each edit within a few seconds. Edits the user is making in that tab at the same moment win: an edit here that would overwrite them is refused, and the tool says so.",
     "",
@@ -131,10 +149,14 @@ function inputShape(tool: PascalTool): Record<string, ZodType> {
         : "The Luw Studio project to edit: its number from luw_studio_list_projects, or the ID in Studio's Settings. The change is saved to it.",
     ),
     ...own,
+    ...HOST_INPUTS[tool.name]?.input,
   };
 }
 
-/** One Pascal tool on a project: load, run, save what changed. A save that lost a race runs once more. */
+/**
+ * One Pascal tool on a project: load, run, save what changed. A save that lost a race runs once more.
+ * The assistant's session (checkpoints, what it made) goes along with every call, as on Pascal's server.
+ */
 async function runOnProject(tool: PascalTool, args: Record<string, unknown>, ctx: ToolContext, extra: Extra): Promise<CallToolResult> {
   const { project_id: id, ...input } = args;
   for (const key of STORE_INPUTS[tool.name] ?? []) delete input[key];
@@ -155,9 +177,20 @@ async function runOnProject(tool: PascalTool, args: Record<string, unknown>, ctx
         `${tool.name} replaces the whole scene, and "${project.name}" already has a design. Start a new project with luw_studio_create_project (it takes a template) instead.`,
       );
     }
-    const run = await runOnScene(graph, tool, input, extra, catalog);
-    if (readOnly || run.result.isError) return run.result;
-    if (!run.changed) return inProject(run.result, project.id);
+    const run = await runOnScene(graph, tool, input, extra, catalog, project.session);
+    // Only a convenience: a session that can't be kept starts afresh next time, as Pascal's would.
+    const keepSession = async () => {
+      if (JSON.stringify(run.session) !== JSON.stringify(project.session))
+        await saveSession(ctx, project.id, run.session).catch(() => {});
+    };
+    if (readOnly || run.result.isError) {
+      await keepSession();
+      return run.result;
+    }
+    if (!run.changed) {
+      await keepSession();
+      return inProject(run.result, project.id);
+    }
     if (contentCount(graph) > 0 && contentCount(run.graph) === 0) {
       throw new InputError("This edit would empty the project, so it was not saved. Delete things one by one, or clear the project in Luw Studio.");
     }
@@ -170,12 +203,15 @@ async function runOnProject(tool: PascalTool, args: Record<string, unknown>, ctx
         "The project keeps changing: it is open in Luw Studio and being edited there. Nothing was saved; try again when that stops.",
       );
     }
+    await keepSession();
     return withNote(inProject(run.result, project.id), `Saved to Luw Studio project ${project.id}: ${studioUrl(project.id)}`);
   }
 }
 
 function registerPascalTool(server: Server, deps: Deps, tool: PascalTool) {
-  const { title, description, outputSchema, annotations } = tool.config;
+  const { title, outputSchema, annotations } = tool.config;
+  const added = HOST_INPUTS[tool.name]?.description;
+  const description = added ? `${tool.config.description ?? ""} ${added}`.trim() : tool.config.description;
   const call = (args: Record<string, unknown>, extra: Extra) =>
     handler<Record<string, unknown>>(deps, (a, ctx) => runOnProject(tool, a, ctx, extra))(args, extra);
   server.registerTool(

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- Studio tools keep the assistant's session as Pascal's server does for a connection: its checkpoints (`set_checkpoint`) and what it made, stored with the project (slot 1011) between calls; an hour without a call starts a new one. `verify_scene` takes `since` (a checkpoint's name), the input Pascal's operation reads and its hosted app adds, and lists what changed after it.
+
 ## 0.3.0
 
 - Luw Studio tools (toolset `studio`; hosted at `https://mcp.luw.ai/studio`, same sign-in): assistants edit the user's Luw Studio 3D projects. `luw_studio_list_projects`, `luw_studio_create_project` (empty site or a starter template), `luw_studio_rename_project`, `luw_studio_undo`, and 63 of Pascal's open-source MCP scene tools (`@pascal-app/mcp`, MIT), each taking a `project_id`. The server keeps no scene between calls: a call loads its project from Luw.ai, runs the tool on Pascal's headless core and saves a changed scene back in Studio's format, keeping the scene it replaced for `luw_studio_undo` and stamping the project so an open Studio tab loads the edit. A save that finds the project changed since it was read runs the edit again on the newer scene; an edit that would empty the project, a template over an existing design and edits to projects last saved by the previous Luw Studio are refused. Left out: geometry scripts (`add_object`, `get_source`), rendering (`view_scene`, `export_glb`), `export_json`, `clear_scene`, Pascal's in-memory `undo`/`redo`, `set_checkpoint` (its checkpoints live in a session that lasts one call here) and `create_house_from_brief`. Resources `luw://studio/guide` and `luw://studio/design-schema`.
