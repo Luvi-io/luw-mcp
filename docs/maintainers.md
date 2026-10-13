@@ -76,6 +76,17 @@ Notes:
 
 The release workflow checks that the tag matches `package.json`, runs typecheck, tests and build, publishes to npm through Trusted Publishing (with provenance), builds `luw.mcpb` and attaches it to a GitHub release, and publishes `server.json` to the MCP Registry when the secret is set.
 
+## Luw Studio tools and Pascal
+
+The `studio` toolset (hosted at `/studio`) runs Pascal's MCP scene tools on Luw Studio projects. Pascal's core and MCP are bundled as Luw Studio builds them, from `vendor/pascal-app-{core,mcp}-<version>-luw.tgz`, so the tools carry Studio's patches (LUW.md in the luwstudio2 repo). After Luw Studio merges Pascal or changes a core patch, rebuild them and release:
+
+```bash
+node scripts/vendor-pascal.mjs ../luwstudio2   # builds and packs both packages into vendor/
+npm install && npm test
+```
+
+Studio picks up an assistant's edit from the persona title stamp (`assistant-edit:<ms>`) the tools write after each save; deploy a Studio that understands it before a server that writes it.
+
 ## Adding a new Luw.ai model
 
 1. Add a tool in `src/tools/generate.ts` that maps friendly snake_case arguments to API parameters. Resolve every image argument through `ctx.files.resolve`.
