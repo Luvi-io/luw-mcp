@@ -33,8 +33,20 @@ import {
  * - clear_scene: empties the project; that is done in Studio.
  * - undo, redo: history lives one call long here; luw_studio_undo undoes an edit.
  * - create_house_from_brief: it creates and publishes a Pascal project.
+ * - set_checkpoint: its checkpoints live in the agent's session, which here lasts one call.
  */
-const LEFT_OUT = new Set(["add_object", "get_source", "view_scene", "export_glb", "export_json", "clear_scene", "undo", "redo", "create_house_from_brief"]);
+const LEFT_OUT = new Set([
+  "add_object",
+  "get_source",
+  "view_scene",
+  "export_glb",
+  "export_json",
+  "clear_scene",
+  "undo",
+  "redo",
+  "create_house_from_brief",
+  "set_checkpoint",
+]);
 
 /** Tools that replace the whole scene: only for a project with nothing built in it. */
 const REPLACES_SCENE = new Set(["create_from_template"]);

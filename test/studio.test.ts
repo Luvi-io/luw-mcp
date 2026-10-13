@@ -73,10 +73,10 @@ describe("studio toolset", () => {
     const { client } = await connect(fakeLuw().fetch, {}, STUDIO);
     const tools = (await client.listTools()).tools;
     const names = tools.map((t) => t.name);
-    for (const name of ["luw_studio_list_projects", "luw_studio_create_project", "luw_studio_rename_project", "luw_studio_undo", "create_room", "furnish_room", "add_door", "get_level_summary", "paint"]) {
+    for (const name of ["luw_studio_list_projects", "luw_studio_create_project", "luw_studio_rename_project", "luw_studio_undo", "create_room", "furnish_room", "add_door", "get_level_summary", "paint", "get_site", "place_building", "add_fence", "run_batch"]) {
       expect(names).toContain(name);
     }
-    for (const name of ["add_object", "view_scene", "clear_scene", "undo", "redo", "export_glb", "save_scene", "load_scene"]) {
+    for (const name of ["add_object", "view_scene", "clear_scene", "undo", "redo", "export_glb", "save_scene", "load_scene", "set_checkpoint"]) {
       expect(names).not.toContain(name);
     }
     const sceneTools = tools.filter((t) => !t.name.startsWith("luw_"));
