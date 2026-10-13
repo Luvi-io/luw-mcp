@@ -141,6 +141,7 @@ describe("studio toolset", () => {
     const p = studioProject([{ id: 1, slot: 8, extras: JSON.stringify(base) }]);
     const { call } = await connect(p.luw.fetch, {}, STUDIO);
     expect((await call("get_walls", { project_id: 7 })).isError).toBeFalsy();
+    expect((await call("get_walls", { project_id: "luw-7" })).isError).toBeFalsy(); // as Studio's Settings shows it
     const wall = Object.values(base.nodes).find((n) => n.type === "wall")!;
     const edit = await call("add_wall", { project_id: 7, levelId: wall.parentId, start: [4, 0], end: [4, 3] });
     expect(edit.isError).toBe(true);

@@ -48,7 +48,14 @@ const LEGACY =
 export const STUDIO_GUIDE_URI = "luw://studio/guide";
 const DESIGN_SCHEMA_URI = "luw://studio/design-schema";
 
-const projectId = z.number().int().positive();
+/** A project's id, as listed here or as Studio's Settings shows it ("luw-1252130"). */
+const projectId = z.union([z.number().int().positive(), z.string().regex(/^(luw-)?\d+$/)]);
+
+function projectNumber(value: unknown): number {
+  const id = typeof value === "number" ? value : Number(String(value).replace(/^luw-/, ""));
+  if (!Number.isInteger(id) || id <= 0) throw new InputError("project_id is a project's number, e.g. 1252130 (or luw-1252130).");
+  return id;
+}
 
 function guide(): string {
   return [
@@ -108,8 +115,8 @@ function inputShape(tool: PascalTool): Record<string, ZodType> {
   return {
     project_id: projectId.describe(
       readOnly
-        ? "The Luw Studio project to read (luw_studio_list_projects)."
-        : "The Luw Studio project to edit (luw_studio_list_projects). The change is saved to it.",
+        ? "The Luw Studio project to read: its number from luw_studio_list_projects, or the ID in Studio's Settings."
+        : "The Luw Studio project to edit: its number from luw_studio_list_projects, or the ID in Studio's Settings. The change is saved to it.",
     ),
     ...own,
   };
@@ -122,7 +129,7 @@ async function runOnProject(tool: PascalTool, args: Record<string, unknown>, ctx
   const readOnly = tool.config.annotations?.readOnlyHint === true;
   const catalog = () => loadCatalog(ctx.config.studioCatalogUrl, ctx.fetch);
   for (let attempt = 1; ; attempt++) {
-    let project = await loadProject(ctx, id as number);
+    let project = await loadProject(ctx, projectNumber(id));
     const stored = parseScene(project.raw);
     if (!readOnly && stored.kind === "scene" && stored.legacy) throw new InputError(LEGACY);
     let graph: SceneGraphJson;
@@ -219,8 +226,9 @@ export function registerStudioTools(server: Server, deps: Deps) {
       annotations: { title: "Rename project", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     handler(deps, async (a, ctx) => {
-      await renameProject(ctx, a.project_id, a.name.trim());
-      return json({ project_id: a.project_id, name: a.name.trim() });
+      const id = projectNumber(a.project_id);
+      await renameProject(ctx, id, a.name.trim());
+      return json({ project_id: id, name: a.name.trim() });
     }),
   );
 
@@ -234,7 +242,7 @@ export function registerStudioTools(server: Server, deps: Deps) {
       annotations: { title: "Undo", readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
     },
     handler(deps, async (a, ctx) => {
-      const project = await loadProject(ctx, a.project_id);
+      const project = await loadProject(ctx, projectNumber(a.project_id));
       await swapUndo(ctx, project);
       return json({ project_id: project.id, undone: true, studio_url: studioUrl(project.id) });
     }),
