@@ -570,9 +570,11 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         "Luw.ai Video AI (Motion): animate a design image into a short cinematic video — fly-throughs, dolly moves, drone shots, reveals. " +
         "Camera motions: A Forward Dolly, Flythrough Cinematic, Return to Empty Room, Lighting and Color Details, Drone flying to center, Dramatic Zoom Out, " +
         "Reverse Zoom In, Slow Pull Back, Reveal Zoom, Ground to Sky Tilt, Side Tracking Zoom, Aerial Descent. " +
-        "Takes a few minutes — expect a processing_url to collect with luw_get_result. Costs 10 credits (aria) or 20 (symphony).",
+        "Pass end_image to make the video end on that frame, e.g. the original photo as image and its redesign as end_image for a before → after transition. " +
+        "Takes a few minutes — expect a processing_url to collect with luw_get_result. Costs 10 credits (aria) or 20 (symphony), with or without end_image.",
       inputSchema: {
         image: imageInput("Start frame (a render or photo)"),
+        end_image: imageInput("Optional end frame the video moves to; use the start frame's aspect ratio").optional(),
         prompt: z.string().max(4000).optional().describe("What should happen in the video."),
         camera_motion: z.string().optional().describe('One of the camera motions listed above, e.g. "Flythrough Cinematic".'),
         engine: f.engine,
@@ -582,10 +584,14 @@ export function registerGenerateTools(server: Server, deps: Deps) {
       annotations: { title: "Video", ...GENERATE },
     },
     handler(deps, async (a, ctx) => {
-      const image = await ctx.files.resolve(a.image, { signal: ctx.signal });
+      const [image, end_image] = await Promise.all([
+        ctx.files.resolve(a.image, { signal: ctx.signal }),
+        ctx.files.resolveOptional(a.end_image, { signal: ctx.signal }),
+      ]);
       return generate(ctx, "Video AI", {
         model: "video",
         image,
+        end_image,
         ...common({ ...a, styles: a.camera_motion ? [a.camera_motion] : undefined }),
       });
     }),

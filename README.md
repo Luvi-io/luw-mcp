@@ -299,7 +299,7 @@ Built-in prompts show up as slash commands or prompt templates in your client: `
 | `luw_segment` | Object masks (all objects, or by prompt) as image URLs | 1 |
 | `luw_generate_image` | Text to image (Fluw), or `format: "svg"` for vectors | 2 |
 | `luw_generate_pattern` | Seamless, tileable textures and patterns | 1 |
-| `luw_generate_video` | Image to cinematic video with 12 camera motions | 10 (20 with Symphony) |
+| `luw_generate_video` | Image to cinematic video with 12 camera motions, optionally ending on an `end_image` | 10 (20 with Symphony) |
 | `luw_image_to_3d` | Photos to a textured 3D model (GLB) | 3 (8 with Symphony) |
 | `luw_archigpt` | Ask ArchiGPT, an AI architect, a standalone question (accepts images) | 1 per ~3k words |
 | `luw_get_result` | Collect a long-running job (free) | 0 |

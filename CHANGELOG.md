@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2
+
+- `luw_generate_video` takes an optional `end_image`: the video moves from `image` to that frame (e.g. a photo and its redesign for a before → after). Same cost; both engines support it. `luw_run_model` also resolves `end_image` from local paths and data: URIs.
+
 ## 0.3.1
 
 - Studio tools keep the assistant's session as Pascal's server does for a connection: its checkpoints (`set_checkpoint`) and what it made, stored with the project (slot 1011) between calls; an hour without a call starts a new one. `verify_scene` takes `since` (a checkpoint's name), the input Pascal's operation reads and its hosted app adds, and lists what changed after it.

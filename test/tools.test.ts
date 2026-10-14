@@ -131,6 +131,16 @@ describe("generation", () => {
     expect(luw.generates()).toHaveLength(1);
   });
 
+  it("sends Video AI's end_image only when one is given", async () => {
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/v.mp4" }));
+    const { call } = await connect(luw.fetch);
+
+    await call("luw_generate_video", { image: "https://example.com/before.jpg", end_image: "https://example.com/after.jpg" });
+    await call("luw_generate_video", { image: "https://example.com/before.jpg" });
+    expect(luw.generates()[0]!.json).toMatchObject({ model: "video", image: "https://example.com/before.jpg", end_image: "https://example.com/after.jpg" });
+    expect(luw.generates()[1]!.json).not.toHaveProperty("end_image");
+  });
+
   it("explains credit and auth errors", async () => {
     const credits = fakeLuw().on("POST", "/generate", () => ({ status: false, insert_coin: true }));
     const r1 = await (await connect(credits.fetch)).call("luw_generate_image", { prompt: "a chair" });

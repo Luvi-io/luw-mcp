@@ -6,7 +6,7 @@ import { handler, text, type Deps, type Server, type ToolContext } from "../cont
 import { contentTypeForExtension, extensionForContentType, InputError } from "../files.js";
 import { formatOutcome, runJobs, type Outcome } from "../jobs.js";
 
-const IMAGE_PARAM = /^(image|mask_image|material_image|control_image|style_transfer|extra_image_\d+)$/;
+const IMAGE_PARAM = /^(image|end_image|mask_image|material_image|control_image|style_transfer|extra_image_\d+)$/;
 
 export function registerCoreTools(server: Server, deps: Deps) {
   server.registerTool(
@@ -127,7 +127,7 @@ export function registerCoreTools(server: Server, deps: Deps) {
       description:
         "Call POST /generate with raw API parameters, for models or options the dedicated tools don't cover (e.g. persona-slot inputs, webhooks). " +
         `Models: ${MODEL_IDS.join(", ")}. Parameter reference: ${DOCS_URL}. ` +
-        "Image fields (image, mask_image, material_image, style_transfer, extra_image_1…6) also accept local paths and data: URIs. Spends credits like the model's own tool.",
+        "Image fields (image, end_image, mask_image, material_image, style_transfer, extra_image_1…6) also accept local paths and data: URIs. Spends credits like the model's own tool.",
       inputSchema: {
         model: z.string().min(1).describe("Model id, e.g. interior or magicprompt."),
         params: z.record(z.string(), z.unknown()).optional().describe("Other /generate parameters, e.g. {\"image\": \"…\", \"prompt\": \"…\", \"precise\": 75}."),
