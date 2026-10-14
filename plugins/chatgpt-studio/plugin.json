@@ -1,0 +1,108 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "luw-ai-studio",
+  "version": "1.0.0",
+  "description": "Design buildings in 3D by chat: build and change your Luw.ai Studio projects (rooms, walls, doors, windows, stairs, roofs, furniture) and see every edit live in Studio.",
+  "author": {
+    "name": "Luvi Technologies, Inc.",
+    "email": "support@luvi.io",
+    "url": "https://luw.ai"
+  },
+  "homepage": "https://studio.luw.ai",
+  "repository": "https://github.com/Luvi-io/luw-mcp",
+  "license": "MIT",
+  "keywords": [
+    "architecture",
+    "3D design",
+    "floor plan",
+    "interior design",
+    "BIM",
+    "home design"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Luw.ai Studio",
+        "shortDescription": "Design buildings in 3D by chat",
+        "longDescription": "Luw.ai Studio is a 3D building design studio in the browser. With this app, ChatGPT builds and changes your Studio projects for you: it lays out rooms, walls, doors and windows, adds stairs and roofs, furnishes rooms from the catalog and sets finishes. Each edit is saved to the project, and Studio, open in another tab, shows it within seconds. The last edit can be undone at any time.\n\nStart from a starter house or an empty site, describe what you want room by room, or refine a project you began in Studio. ChatGPT reads the scene before it changes anything and checks its work afterwards.\n\nRequires a Luw.ai account. Editing projects uses no credits; renders and other generations use credits from your Luw.ai account.",
+        "developerName": "Luvi Technologies, Inc.",
+        "category": "Creativity",
+        "capabilities": [
+          "Build floor plans in 3D",
+          "Edit rooms, walls and openings",
+          "Furnish rooms",
+          "Create projects",
+          "Undo edits",
+          "Render designs"
+        ],
+        "websiteURL": "https://studio.luw.ai",
+        "supportURL": "https://app.luw.ai/support",
+        "privacyPolicyURL": "https://app.luw.ai/docs/privacy",
+        "termsOfServiceURL": "https://app.luw.ai/docs/terms",
+        "defaultPrompt": [
+          "List my Luw.ai Studio projects.",
+          "Create a Luw.ai Studio project from a starter house and add a 3 by 4 m bedroom with a window.",
+          "Furnish the living room in my Luw.ai Studio project in a Scandinavian style."
+        ],
+        "composerIcon": "./assets/logo.png",
+        "logo": "./assets/logo.png"
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Create a project",
+              "prompt": "Create a new Luw.ai Studio project called Review House from a starter house.",
+              "tools_triggered": "luw_studio_create_project",
+              "expected_behavior": "ChatGPT replies with the new project's name and a link to it in Luw.ai Studio; the link opens the starter house."
+            },
+            {
+              "description": "List projects",
+              "prompt": "List my Luw.ai Studio projects.",
+              "tools_triggered": "luw_studio_list_projects",
+              "expected_behavior": "ChatGPT lists the account's Studio projects, newest first, Review House among them, each with its Studio link."
+            },
+            {
+              "description": "Add a room with a window",
+              "prompt": "In my Luw.ai Studio project Review House, add a 3 by 4 metre bedroom on the ground floor with a window.",
+              "tools_triggered": "create_room, add_window",
+              "expected_behavior": "ChatGPT confirms a 3 x 4 m bedroom with one window; a Studio tab with Review House open shows the room within seconds."
+            },
+            {
+              "description": "Furnish a room",
+              "prompt": "Furnish that bedroom in Review House with a double bed, two bedside tables and a wardrobe.",
+              "tools_triggered": "furnish_room",
+              "expected_behavior": "The bedroom in Review House holds a double bed, two bedside tables and a wardrobe, placed inside its walls."
+            },
+            {
+              "description": "Undo the last edit",
+              "prompt": "Undo your last change to Review House in Luw.ai Studio.",
+              "tools_triggered": "luw_studio_undo",
+              "expected_behavior": "The furniture from the previous step is gone from Review House; asking again brings it back."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Unrelated request: Luw.ai Studio should not be called for a weather question; ChatGPT answers on its own.",
+              "prompt": "What's the weather in Istanbul tomorrow?"
+            },
+            {
+              "description": "Writing task outside design: Luw.ai Studio should not be called to write a cover letter.",
+              "prompt": "Write a cover letter for a marketing manager job."
+            },
+            {
+              "description": "Arithmetic question: no Luw.ai Studio tool should run.",
+              "prompt": "What is 15% of 240?"
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "The plugin sells nothing inside ChatGPT and shows no prices, plans, upgrade prompts or checkout links. Generations use credits the user already has in their Luw.ai account."
+      },
+      "publication": {
+        "countries": [],
+        "release_notes": "First release: build and edit Luw.ai Studio 3D projects by chat, with live sync to Studio and undo."
+      }
+    }
+  }
+}
