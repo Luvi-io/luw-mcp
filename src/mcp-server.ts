@@ -9,6 +9,7 @@ import { registerArchiGptTool } from "./tools/archigpt.js";
 import { registerCoreTools } from "./tools/core.js";
 import { registerGenerateTools } from "./tools/generate.js";
 import { registerPersonaTool, registerProjectTool, registerTeamTool } from "./tools/workspace.js";
+import { listToolsForChatGpt } from "./schema-compat.js";
 import { registerStudioTools, STUDIO_GUIDE_URI } from "./studio/tools.js";
 import { registerResultViewer, withResultViewer } from "./widget.js";
 
@@ -79,5 +80,6 @@ export function createLuwServer(config: LuwConfig, fetchImpl?: typeof fetch): Mc
   if (sets.has("generate")) registerPrompts(server);
   if (!local && sets.has("generate")) registerResultViewer(server);
   registerResources(server, deps, { instructions: instructions(config), tools });
+  listToolsForChatGpt(server);
   return server;
 }

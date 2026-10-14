@@ -87,6 +87,18 @@ describe("studio toolset", () => {
     expect(tools.find((t) => t.name === "create_from_template")?.inputSchema.properties).not.toHaveProperty("save");
   });
 
+  it("lists input schemas ChatGPT accepts: no tuples (paint's texture repeat was one)", async () => {
+    const { client, call } = await connect(fakeLuw().fetch, {}, STUDIO);
+    const tools = (await client.listTools()).tools;
+    const tuples = tools.filter((t) => /"items":\[|"additionalItems"/.test(JSON.stringify(t.inputSchema))).map((t) => t.name);
+    expect(tuples).toEqual([]);
+    const paint = JSON.stringify(tools.find((t) => t.name === "paint")?.inputSchema);
+    expect(paint).toContain('"repeat":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2}');
+    // The tuple still checks what comes in.
+    const wrong = await call("paint", { project_id: 1, targets: ["wall_1"], material: { texture: { url: "https://cdn/t.png", repeat: [1, 2, 3] } } });
+    expect(textOf(wrong)).toContain("Input validation error");
+  });
+
   it("lists projects without their scenes", async () => {
     const luw = fakeLuw().on("GET", "/personas/ft-Studio", () => ({
       status: true,
