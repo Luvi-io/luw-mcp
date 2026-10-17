@@ -19,4 +19,7 @@ for (const name of ["core", "mcp"]) {
   renameSync(join(vendor, `pascal-app-${name}-${version}.tgz`), join(vendor, `pascal-app-${name}-${version}-luw.tgz`));
   console.log(`vendor/pascal-app-${name}-${version}-luw.tgz`);
 }
-console.log("Now point package.json at these files if the version changed, and run npm install.");
+// npm reuses a cached tarball whose integrity the lockfile holds, so a plain `npm install` keeps the old
+// build when the version did not change: install the files themselves, which records their new integrity.
+console.log("Now point package.json at these files if the version changed, and run:");
+console.log("  npm install --save-dev ./vendor/pascal-app-core-<version>-luw.tgz ./vendor/pascal-app-mcp-<version>-luw.tgz");

@@ -87,6 +87,19 @@ describe("studio toolset", () => {
     expect(tools.find((t) => t.name === "create_from_template")?.inputSchema.properties).not.toHaveProperty("save");
   });
 
+  it("answers a tool Pascal retired with its replacement, and no tool names Pascal as the library", async () => {
+    const { client, call } = await connect(fakeLuw().fetch, {}, STUDIO);
+    const tools = (await client.listTools()).tools;
+    const names = tools.map((t) => t.name);
+    for (const name of ["find_nodes", "describe_node", "validate_scene"]) expect(names).not.toContain(name);
+    for (const name of ["find_by_type", "get_node", "verify_scene", "search_materials"]) expect(names).toContain(name);
+    const retired = await call("find_nodes", { project_id: 7, type: "wall" });
+    expect(retired.isError).toBe(true);
+    expect(textOf(retired)).toContain("tool_retired");
+    expect(textOf(retired)).toContain("find_by_type");
+    expect(tools.find((t) => t.name === "search_materials")?.description).not.toMatch(/Pascal/);
+  });
+
   it("lists input schemas ChatGPT accepts: no tuples (paint's texture repeat was one)", async () => {
     const { client, call } = await connect(fakeLuw().fetch, {}, STUDIO);
     const tools = (await client.listTools()).tools;

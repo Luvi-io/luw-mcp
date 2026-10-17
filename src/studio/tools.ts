@@ -1,5 +1,6 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { describeDesignSchema } from "@pascal-app/core/procedural-items";
+import { answerRetiredTools } from "@pascal-app/mcp/tools/retired-tools";
 import { z, type ZodType } from "zod";
 import { handler, json, type Deps, type Extra, type Server, type ToolContext } from "../context.js";
 import { InputError } from "../files.js";
@@ -96,9 +97,9 @@ function guide(): string {
     "",
     "1. `luw_studio_list_projects` finds the project (newest first; `search` by name). For a new design, `luw_studio_create_project`, optionally from a template.",
     "2. Every scene tool takes `project_id`. A tool that changes the scene saves the project then and there: there is no load or save step.",
-    "3. Read before you build: `get_level_summary`, `get_zones`, `get_walls`, `find_nodes`.",
+    "3. Read before you build: `get_level_summary`, `get_zones`, `get_walls`, `find_by_type`, `get_node`.",
     "4. Build with the semantic tools: `create_story_shell`, `create_room`, `add_door`, `add_window`, `furnish_room`, `place_items`, `paint`, `create_roof`.",
-    "5. Check with `verify_scene` and `validate_scene`, then give the user the project's `studio_url`.",
+    "5. Check with `verify_scene`, then give the user the project's `studio_url`.",
     "6. `luw_studio_undo` puts back the scene from before the last edit made through these tools; calling it again redoes that edit.",
     "7. `set_checkpoint` names a moment before a big step (a floor, the roof); `verify_scene({ since })` then lists what changed after it. Checkpoints stay with the project while you keep working; after an hour without a call the next session starts afresh.",
     "",
@@ -208,10 +209,13 @@ async function runOnProject(tool: PascalTool, args: Record<string, unknown>, ctx
   }
 }
 
+/** Pascal's contracts name its own library ("Pascal's materials"); here the library is Luw Studio's. */
+const asLuwStudio = (text: string | undefined) => text?.replace(/Pascal/g, "Luw Studio");
+
 function registerPascalTool(server: Server, deps: Deps, tool: PascalTool) {
   const { title, outputSchema, annotations } = tool.config;
   const added = HOST_INPUTS[tool.name]?.description;
-  const description = added ? `${tool.config.description ?? ""} ${added}`.trim() : tool.config.description;
+  const description = asLuwStudio(added ? `${tool.config.description ?? ""} ${added}`.trim() : tool.config.description);
   const call = (args: Record<string, unknown>, extra: Extra) =>
     handler<Record<string, unknown>>(deps, (a, ctx) => runOnProject(tool, a, ctx, extra))(args, extra);
   server.registerTool(
@@ -299,6 +303,9 @@ export function registerStudioTools(server: Server, deps: Deps) {
   for (const tool of pascalTools().values()) {
     if (!LEFT_OUT.has(tool.name)) registerPascalTool(server, deps, tool);
   }
+  // A client or a saved script still calling a tool Pascal retired (find_nodes, describe_node,
+  // validate_scene) is told its replacement and how to use it, as Pascal's own server answers.
+  answerRetiredTools(server as never);
 
   server.registerResource(
     "studio-guide",

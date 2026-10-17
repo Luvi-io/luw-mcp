@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.3
+
+- Studio tools run Pascal's scene tools as Luw Studio runs them after its 2026-10-17 merge: `create_stair` builds L and U stairs, railings and steps to no level; `create_roof` builds barrel and glazed roofs, and a gable segment takes its own overhang; `paint` reaches every part with surfaces and keeps a native material in the scene, `search_materials` browses and pages the library; `get_site` reads the lot's frontage, depth, buildable edges and ground; `find_by_type` takes find_nodes' filters and `get_node` what describe_node added; `verify_scene` also lists schema errors and rooms the walls leave open; every length and angle takes text in any unit ("6 ft", "6:12"). `move_roofs_to_roof_level` joins.
+- `find_nodes`, `describe_node` and `validate_scene` are retired, as on Pascal's server: they are no longer listed, and a call to one answers `tool_retired` with the tool that replaced it and how to use it. The guide names `find_by_type` and `get_node`.
+- Tool descriptions call the material library Luw Studio's.
+- `scripts/vendor-pascal.mjs` says to install the rebuilt tarballs themselves: npm keeps a cached build whose integrity the lockfile holds.
+
 ## 0.3.2
 
 - `luw_generate_video` takes an optional `end_image`: the video moves from `image` to that frame (e.g. a photo and its redesign for a before → after). Same cost; both engines support it. `luw_run_model` also resolves `end_image` from local paths and data: URIs.
