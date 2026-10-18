@@ -24,6 +24,8 @@ function instructions(config: LuwConfig): string {
     "Each generation uses credits from the user's Luw.ai account; variations multiply the cost.",
     "luw_list_options lists valid style, room type, camera motion and material names.",
     "To change one exact area, luw_segment returns a mask for luw_magic_wand or luw_landscape_design.",
+    // Luw.ai Terms of Use, Section 6.2; the same rule the Luw.ai apps' own assistant follows.
+    "Everything these tools make is an AI-generated concept, not for construction or renovation. When the user means to build or renovate from it, tell them once, in their language, that a licensed architect or engineer must turn it into a real project and the local authority must approve it and issue permits; never say whether a real wall, column or beam can be removed, and never call a design structurally sound, code-compliant or permit-ready.",
     ...(config.toolsets.has("studio")
       ? [
           `Luw Studio (3D building design): luw_studio_list_projects finds the user's projects; every scene tool takes a project_id and saves its change to that project, which an open Studio tab shows. Read ${STUDIO_GUIDE_URI} before building.`,
