@@ -11,7 +11,7 @@
 
 <p align="center">
   AI interior, exterior and landscape design, photoreal rendering, image editing, video and 3D,<br>
-  inside Claude, Cursor, VS Code, Windsurf, Codex and any other MCP client.
+  inside ChatGPT, Claude, Cursor, VS Code, Windsurf, Codex and any other MCP client.
 </p>
 
 <p align="center">
@@ -21,6 +21,8 @@
 </p>
 
 <p align="center">
+  <a href="https://chatgpt.com/plugins/plugin_asdk_app_6ac8d1bd0f908191a97db90c129430f6"><img alt="Add to ChatGPT" src="https://img.shields.io/badge/ChatGPT-Add_Luw.ai-10A37F?style=for-the-badge" height="32"></a>
+  &nbsp;
   <a href="https://cursor.com/en-US/install-mcp?name=luw&config=eyJ1cmwiOiJodHRwczovL21jcC5sdXcuYWkvbWNwIn0%3D"><img alt="Add to Cursor" src="https://cursor.com/deeplink/mcp-install-dark.svg" height="32"></a>
   &nbsp;
   <a href="https://vscode.dev/redirect/mcp/install?name=luw&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fmcp.luw.ai%2Fmcp%22%7D"><img alt="Install in VS Code" src="https://img.shields.io/badge/VS_Code-Install_Luw.ai-0098FF?style=for-the-badge" height="32"></a>
@@ -59,10 +61,12 @@ claude mcp add --transport http luw https://mcp.luw.ai/mcp --scope user
 Then type `/mcp`, pick **luw** and sign in.
 </details>
 
-<details>
+<details open>
 <summary><b>ChatGPT</b></summary>
 
-*Settings → Apps & Connectors → Advanced settings*, turn on **Developer mode**, then **Create**: URL `https://mcp.luw.ai/mcp`, authentication **OAuth**, and sign in.
+Open [Luw.ai in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6ac8d1bd0f908191a97db90c129430f6), add it and sign in to Luw.ai.
+
+The [Luw Studio tools](#luw-studio-edit-your-3d-projects) aren't in ChatGPT's directory yet; add them yourself: *Settings → Apps & Connectors → Advanced settings*, turn on **Developer mode**, then **Create**: URL `https://mcp.luw.ai/studio`, authentication **OAuth**, and sign in.
 </details>
 
 <details>

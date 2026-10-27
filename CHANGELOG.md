@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Luw.ai is in ChatGPT's app directory ([Luw.ai in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6ac8d1bd0f908191a97db90c129430f6)), on the hosted `/mcp` endpoint. The README's ChatGPT setup and an "Add to ChatGPT" button open it; Developer mode stays for the Studio tools (`/studio`), which aren't listed yet.
+
 ## 0.3.3
 
 - Studio tools run Pascal's scene tools as Luw Studio runs them after its 2026-10-17 merge: `create_stair` builds L and U stairs, railings and steps to no level; `create_roof` builds barrel and glazed roofs, and a gable segment takes its own overhang; `paint` reaches every part with surfaces and keeps a native material in the scene, `search_materials` browses and pages the library; `get_site` reads the lot's frontage, depth, buildable edges and ground; `find_by_type` takes find_nodes' filters and `get_node` what describe_node added; `verify_scene` also lists schema errors and rooms the walls leave open; every length and angle takes text in any unit ("6 ft", "6:12"). `move_roofs_to_roof_level` joins.
