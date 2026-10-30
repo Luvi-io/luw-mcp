@@ -1,5 +1,7 @@
 import type { AssetInput } from "@pascal-app/core";
+import { type AssetViewLoader, createAssetViewLoader, createFetchAssetViewIO } from "@pascal-app/core/agent-operations";
 import { MCP_CATALOG_ITEMS } from "@pascal-app/mcp/tools/asset-catalog";
+import { STUDIO_URL } from "../config.js";
 
 // The items search_assets, place_items and furnish_room place: Luw Studio's own catalog (Pascal's
 // library plus Luw's pieces), served by Studio at /api/catalog. Paths in it ("/items/…") are Studio's,
@@ -75,4 +77,13 @@ export async function loadCatalog(url: string, fetchImpl: typeof fetch): Promise
     cached = { url, at: Date.now() - TTL_MS + 60_000, items: FALLBACK_CATALOG };
     return FALLBACK_CATALOG;
   }
+}
+
+/**
+ * What view_assets and paint read of a catalog piece (its pictures, size and paintable surfaces): its
+ * model and pictures, fetched as Pascal's server does, Studio's own links ("/items/…") from Studio.
+ */
+export function studioAssetViews(catalogUrl: string, fetchImpl: typeof fetch): AssetViewLoader {
+  const base = catalogUrl || STUDIO_URL;
+  return createAssetViewLoader(createFetchAssetViewIO({ fetchImpl, resolveUrl: async (url) => new URL(url, base).href }));
 }

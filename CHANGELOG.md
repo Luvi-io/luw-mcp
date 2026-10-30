@@ -4,6 +4,13 @@
 
 - Luw.ai is in ChatGPT's app directory ([Luw.ai in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6ac8d1bd0f908191a97db90c129430f6)), on the hosted `/mcp` endpoint. The README's ChatGPT setup and an "Add to ChatGPT" button open it; Developer mode stays for the Studio tools (`/studio`), which aren't listed yet.
 
+## 0.3.4
+
+- Studio tools run Pascal's scene tools as Luw Studio runs them after its 2026-10-29 merge. `view_assets` shows catalog pieces (a picture of each, its size and the surfaces `paint` can finish), Luw's own pieces read from Studio; `set_ground_level` makes a level the ground floor, so the ones below are basements. Furnishing is not held behind a design brief: the catalog comes first, `place_design` makes what it lacks. `design_brief` and `author_scene` are left out (the second compiles item modules, as `add_object` does).
+- The guide says where furniture comes from: the catalog, `view_assets` when the choice matters, a design for a piece the catalog lacks or one of the user's own size.
+- Tool descriptions and their inputs call the library Luw Studio's, as 0.3.3 meant to: its rewrite never matched (the word boundaries had become backspaces), and its test, written the same way, passed regardless.
+- Pascal's tools are written for the MCP SDK v2 now; this server stays on v1 and takes them over (their object schemas, and the answer to a retired tool).
+
 ## 0.3.3
 
 - Studio tools run Pascal's scene tools as Luw Studio runs them after its 2026-10-17 merge: `create_stair` builds L and U stairs, railings and steps to no level; `create_roof` builds barrel and glazed roofs, and a gable segment takes its own overhang; `paint` reaches every part with surfaces and keeps a native material in the scene, `search_materials` browses and pages the library; `get_site` reads the lot's frontage, depth, buildable edges and ground; `find_by_type` takes find_nodes' filters and `get_node` what describe_node added; `verify_scene` also lists schema errors and rooms the walls leave open; every length and angle takes text in any unit ("6 ft", "6:12"). `move_roofs_to_roof_level` joins.

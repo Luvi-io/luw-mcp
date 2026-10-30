@@ -1,12 +1,12 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { describeDesignSchema } from "@pascal-app/core/procedural-items";
-import { answerRetiredTools } from "@pascal-app/mcp/tools/retired-tools";
 import { z, type ZodType } from "zod";
 import { handler, json, type Deps, type Extra, type Server, type ToolContext } from "../context.js";
 import { InputError } from "../files.js";
-import { loadCatalog } from "./catalog.js";
+import { loadCatalog, studioAssetViews } from "./catalog.js";
+import { answerRetiredTools } from "./retired-tools.js";
 import { PASCAL_SCENE_RULES } from "./pascal-guide.js";
-import { contentCount, defaultScene, pascalTools, runOnScene, type PascalTool } from "./engine.js";
+import { contentCount, defaultScene, pascalTools, runOnScene, type PascalTool, type PascalToolConfig } from "./engine.js";
 import {
   createProject,
   listProjects,
@@ -35,6 +35,8 @@ import {
  * - clear_scene: empties the project; that is done in Studio.
  * - undo, redo: history lives one call long here; luw_studio_undo undoes an edit.
  * - create_house_from_brief: it creates and publishes a Pascal project.
+ * - author_scene: it compiles item modules, which need the same store as add_object.
+ * - design_brief: furnishing isn't held behind a brief here (engine.ts), as in Studio's assistant.
  */
 const LEFT_OUT = new Set([
   "add_object",
@@ -46,6 +48,8 @@ const LEFT_OUT = new Set([
   "undo",
   "redo",
   "create_house_from_brief",
+  "author_scene",
+  "design_brief",
 ]);
 
 /** Tools that replace the whole scene: only for a project with nothing built in it. */
@@ -103,6 +107,8 @@ function guide(): string {
     "6. `luw_studio_undo` puts back the scene from before the last edit made through these tools; calling it again redoes that edit.",
     "7. `set_checkpoint` names a moment before a big step (a floor, the roof); `verify_scene({ since })` then lists what changed after it. Checkpoints stay with the project while you keep working; after an hour without a call the next session starts afresh.",
     "",
+    "Furniture comes from the catalog first: `search_assets`, and `view_assets` shows a piece's picture, size and paintable surfaces when the choice matters. A piece the catalog lacks, or one of the user's own size (a fitted shelf, an alcove desk, a built-in bench), is a design: check it with `validate_design`, then `place_design` (its schema is the luw://studio/design-schema resource).",
+    "",
     "A Studio tab that has the project open shows each edit within a few seconds. Edits the user is making in that tab at the same moment win: an edit here that would overwrite them is refused, and the tool says so.",
     "",
     PASCAL_SCENE_RULES,
@@ -139,9 +145,21 @@ function inProject(result: CallToolResult, projectId: number): CallToolResult {
   };
 }
 
+/** Pascal's SDK v2 tools give a whole object schema, the v1 ones gave its fields: either way, the fields. */
+function pascalShape(schema: PascalToolConfig["inputSchema"]): Record<string, ZodType> {
+  if (!schema) return {};
+  return schema instanceof Object && "shape" in schema && typeof schema.shape === "object"
+    ? (schema.shape as unknown as Record<string, ZodType>)
+    : (schema as unknown as Record<string, ZodType>);
+}
+
 function inputShape(tool: PascalTool): Record<string, ZodType> {
   const omit = new Set(STORE_INPUTS[tool.name] ?? []);
-  const own = Object.fromEntries(Object.entries(tool.config.inputSchema ?? {}).filter(([key]) => !omit.has(key)));
+  const own = Object.fromEntries(
+    Object.entries(pascalShape(tool.config.inputSchema))
+      .filter(([key]) => !omit.has(key))
+      .map(([key, field]) => [key, field.description ? field.describe(asLuwStudio(field.description)!) : field]),
+  );
   const readOnly = tool.config.annotations?.readOnlyHint === true;
   return {
     project_id: projectId.describe(
@@ -163,6 +181,7 @@ async function runOnProject(tool: PascalTool, args: Record<string, unknown>, ctx
   for (const key of STORE_INPUTS[tool.name] ?? []) delete input[key];
   const readOnly = tool.config.annotations?.readOnlyHint === true;
   const catalog = () => loadCatalog(ctx.config.studioCatalogUrl, ctx.fetch);
+  const assetViews = studioAssetViews(ctx.config.studioCatalogUrl, ctx.fetch);
   for (let attempt = 1; ; attempt++) {
     let project = await loadProject(ctx, projectNumber(id));
     const stored = parseScene(project.raw);
@@ -178,7 +197,7 @@ async function runOnProject(tool: PascalTool, args: Record<string, unknown>, ctx
         `${tool.name} replaces the whole scene, and "${project.name}" already has a design. Start a new project with luw_studio_create_project (it takes a template) instead.`,
       );
     }
-    const run = await runOnScene(graph, tool, input, extra, catalog, project.session);
+    const run = await runOnScene(graph, tool, input, extra, catalog, project.session, assetViews);
     // Only a convenience: a session that can't be kept starts afresh next time, as Pascal's would.
     const keepSession = async () => {
       if (JSON.stringify(run.session) !== JSON.stringify(project.session))
@@ -209,8 +228,8 @@ async function runOnProject(tool: PascalTool, args: Record<string, unknown>, ctx
   }
 }
 
-/** Pascal's contracts name its own library ("Pascal's materials"); here the library is Luw Studio's. */
-const asLuwStudio = (text: string | undefined) => text?.replace(/Pascal/g, "Luw Studio");
+/** Pascal's contracts and their inputs name its own library ("Pascal's materials"); here the library is Luw Studio's. */
+const asLuwStudio = (text: string | undefined) => text?.replace(/\bPascal\b/g, "Luw Studio");
 
 function registerPascalTool(server: Server, deps: Deps, tool: PascalTool) {
   const { title, outputSchema, annotations } = tool.config;
@@ -305,7 +324,7 @@ export function registerStudioTools(server: Server, deps: Deps) {
   }
   // A client or a saved script still calling a tool Pascal retired (find_nodes, describe_node,
   // validate_scene) is told its replacement and how to use it, as Pascal's own server answers.
-  answerRetiredTools(server as never);
+  answerRetiredTools(server);
 
   server.registerResource(
     "studio-guide",

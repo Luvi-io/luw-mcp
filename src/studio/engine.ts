@@ -1,7 +1,14 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AssetInput } from "@pascal-app/core";
-import { parseSessionRecord, recordMade, type SceneNodes } from "@pascal-app/core/agent-operations";
+import {
+  type AssetViewLoader,
+  createAssetViewLoader,
+  createFetchAssetViewIO,
+  parseSessionRecord,
+  recordMade,
+  type SceneNodes,
+} from "@pascal-app/core/agent-operations";
 import useScene from "@pascal-app/core/store";
 import { SceneBridge } from "@pascal-app/mcp/bridge";
 import { createSceneOperations } from "@pascal-app/mcp/operations";
@@ -19,8 +26,9 @@ import type { SceneGraphJson } from "./projects.js";
 export type PascalToolConfig = {
   title?: string;
   description?: string;
-  inputSchema?: Record<string, ZodType>;
-  outputSchema?: Record<string, ZodType>;
+  /** An object schema (Pascal's tools for the MCP SDK v2) or its fields. */
+  inputSchema?: Record<string, ZodType> | ZodType;
+  outputSchema?: Record<string, ZodType> | ZodType;
   annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean; idempotentHint?: boolean; openWorldHint?: boolean; title?: string };
 };
 type PascalCallback = (args: Record<string, unknown>, extra: Extra) => CallToolResult | Promise<CallToolResult>;
@@ -34,19 +42,30 @@ interface Runtime {
 let runtime: Runtime | null = null;
 /** The catalog the call in progress reads (a call's server may have its own catalog address). */
 let activeCatalog: () => Promise<readonly AssetInput[]> = async () => [];
+/** Pascal's own reader of catalog models and pictures, for absolute links. */
+const plainAssetViews = createAssetViewLoader(createFetchAssetViewIO());
+/** What view_assets and paint read of catalog pieces in the call in progress (Studio's links are relative). */
+let activeAssetViews: AssetViewLoader = plainAssetViews;
 
 function pascal(): Runtime {
   if (runtime) return runtime;
   const bridge = new SceneBridge();
   const operations = createSceneOperations({ bridge });
-  // A stand-in server that only collects what Pascal registers.
+  // As in Luw Studio's own assistant: furnishing isn't held behind a design brief. The catalog comes
+  // first, place_design makes what it lacks; Pascal's server refuses to place until design_brief ran.
+  operations.designBriefRequired = false;
+  // A stand-in server that only collects what Pascal registers. Pascal writes its tools for the MCP
+  // SDK v2 (@modelcontextprotocol/server), Luw's server runs v1: tools.ts hands them over.
   const collector = new McpServer({ name: "pascal-tools", version: "0" });
   const tools = new Map<string, PascalTool>();
   collector.registerTool = ((name: string, config: PascalToolConfig, callback: PascalCallback) => {
     tools.set(name, { name, config, callback });
     return { enable() {}, disable() {}, remove() {}, update() {} };
   }) as unknown as McpServer["registerTool"];
-  registerTools(collector, operations, { catalog: () => activeCatalog() });
+  registerTools(collector, operations, {
+    catalog: () => activeCatalog(),
+    assetViews: (subjects, options) => activeAssetViews(subjects, options),
+  });
   runtime = { bridge, tools };
   return runtime;
 }
@@ -91,10 +110,12 @@ export function runOnScene(
   extra: Extra,
   catalog: () => Promise<readonly AssetInput[]>,
   session?: unknown,
+  assetViews: AssetViewLoader = plainAssetViews,
 ): Promise<SceneRun> {
   const { bridge } = pascal();
   return exclusive(async () => {
     activeCatalog = catalog;
+    activeAssetViews = assetViews;
     // Nothing of the last call's project may remain: loadDefault keeps a scene already in the store,
     // and setScene keeps the plugin state of a scene that names none.
     useScene.getState().unloadScene();

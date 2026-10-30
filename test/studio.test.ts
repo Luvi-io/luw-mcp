@@ -75,10 +75,10 @@ describe("studio toolset", () => {
     const { client } = await connect(fakeLuw().fetch, {}, STUDIO);
     const tools = (await client.listTools()).tools;
     const names = tools.map((t) => t.name);
-    for (const name of ["luw_studio_list_projects", "luw_studio_create_project", "luw_studio_rename_project", "luw_studio_undo", "create_room", "furnish_room", "add_door", "get_level_summary", "paint", "get_site", "place_building", "add_fence", "run_batch", "set_checkpoint"]) {
+    for (const name of ["luw_studio_list_projects", "luw_studio_create_project", "luw_studio_rename_project", "luw_studio_undo", "create_room", "furnish_room", "add_door", "get_level_summary", "paint", "get_site", "place_building", "add_fence", "run_batch", "set_checkpoint", "view_assets", "place_design", "set_ground_level"]) {
       expect(names).toContain(name);
     }
-    for (const name of ["add_object", "view_scene", "clear_scene", "undo", "redo", "export_glb", "save_scene", "load_scene"]) {
+    for (const name of ["add_object", "view_scene", "clear_scene", "undo", "redo", "export_glb", "save_scene", "load_scene", "author_scene", "design_brief"]) {
       expect(names).not.toContain(name);
     }
     const sceneTools = tools.filter((t) => !t.name.startsWith("luw_"));
@@ -97,7 +97,9 @@ describe("studio toolset", () => {
     expect(retired.isError).toBe(true);
     expect(textOf(retired)).toContain("tool_retired");
     expect(textOf(retired)).toContain("find_by_type");
-    expect(tools.find((t) => t.name === "search_materials")?.description).not.toMatch(/Pascal/);
+    // Only Luw's own Studio tools credit Pascal (its starter scenes); none of Pascal's says it is the library.
+    const naming = tools.filter((t) => !t.name.startsWith("luw_") && /\bPascal\b/.test(JSON.stringify(t)));
+    expect(naming.map((t) => t.name)).toEqual([]);
   });
 
   it("lists input schemas ChatGPT accepts: no tuples (paint's texture repeat was one)", async () => {
@@ -218,6 +220,20 @@ describe("studio toolset", () => {
     const saved = scene(p.trainings.get(8)!.extras) as ReturnType<typeof scene> & { luwEnvironment?: unknown };
     expect(saved.nodes.luwthing_1).toMatchObject({ type: "luw-thing", metadata: { kept: true } });
     expect(saved.luwEnvironment).toEqual({ preset: "neon" });
+  });
+
+  it("views a catalog piece from Studio's own files, as Studio links them", async () => {
+    const p = studioProject([{ id: 1, slot: 8, extras: await sceneWithWall() }]);
+    const asked: string[] = [];
+    p.luw.on("GET", /^https:\/\/studio\.luw\.ai\/items\//, (req: Recorded) => {
+      asked.push(`${req.url.href} ${req.headers.get("range") ?? ""}`.trim());
+      return new Response("gone", { status: 404 });
+    });
+    const { call } = await connect(p.luw.fetch, {}, STUDIO);
+    const viewed = await call("view_assets", { project_id: 7, ids: ["luw-vanity-single"] });
+    expect(asked[0]).toMatch(/^https:\/\/studio\.luw\.ai\/items\/luw\/luw-vanity-single\/model\.glb bytes=0-/);
+    expect(textOf(viewed)).toContain("luw-vanity-single");
+    expect(p.writes()).toHaveLength(0);
   });
 
   it("builds and furnishes rooms with Luw's core: a small bathroom gets Luw's single vanity", async () => {
