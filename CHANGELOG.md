@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.3.5
 
+- Studio tools run Pascal's scene tools as Luw Studio runs them after its 2026-10-31 merge. `set_wall_type` gives standard walls an assembly (its layers and thickness); a room can be a porch, deck or patio, with its posts and beam; a column can be a framing post. Unpainted walls take Pascal's defaults now: a soft grey inside, raw drywall outside until a cladding or paint is chosen.
 - Luw.ai is in ChatGPT's app directory ([Luw.ai in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6ac8d1bd0f908191a97db90c129430f6)), on the hosted `/mcp` endpoint. The README's ChatGPT setup and an "Add to ChatGPT" button open it; Developer mode stays for the Studio tools (`/studio`), which aren't listed yet.
 
 ## 0.3.4
