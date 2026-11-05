@@ -37,6 +37,7 @@ import {
  * - create_house_from_brief: it creates and publishes a Pascal project.
  * - author_scene: it compiles item modules, which need the same store as add_object.
  * - design_brief: furnishing isn't held behind a brief here (engine.ts), as in Studio's assistant.
+ * - kitchen_check_clearance: it reads every kind's definitions (doors, items), which this server doesn't load.
  */
 const LEFT_OUT = new Set([
   "add_object",
@@ -50,6 +51,7 @@ const LEFT_OUT = new Set([
   "create_house_from_brief",
   "author_scene",
   "design_brief",
+  "kitchen_check_clearance",
 ]);
 
 /** Tools that replace the whole scene: only for a project with nothing built in it. */
@@ -108,6 +110,8 @@ function guide(): string {
     "7. `set_checkpoint` names a moment before a big step (a floor, the roof); `verify_scene({ since })` then lists what changed after it. Checkpoints stay with the project while you keep working; after an hour without a call the next session starts afresh.",
     "",
     "Furniture comes from the catalog first: `search_assets`, and `view_assets` shows a piece's picture, size and paintable surfaces when the choice matters. A piece the catalog lacks, or one of the user's own size (a fitted shelf, an alcove desk, a built-in bench), is a design: check it with `validate_design`, then `place_design` (its schema is the luw://studio/design-schema resource).",
+    "",
+    "A kitchen's cabinets are `kitchen_add_run`: a modular kitchen along one wall, or two or three walls meeting at corners (an L or a U), with the sink, cooktop, fridge, wall cabinets and hood, which the user edits in Studio like one they drew; not catalog counters. `kitchen_finish_run` aligns a run or closes small gaps at its ends.",
     "",
     "A Studio tab that has the project open shows each edit within a few seconds. Edits the user is making in that tab at the same moment win: an edit here that would overwrite them is refused, and the tool says so.",
     "",

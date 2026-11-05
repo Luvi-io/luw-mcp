@@ -13,6 +13,9 @@ import useScene from "@pascal-app/core/store";
 import { SceneBridge } from "@pascal-app/mcp/bridge";
 import { createSceneOperations } from "@pascal-app/mcp/operations";
 import { registerTools } from "@pascal-app/mcp/tools/index";
+import { registerOperationTool } from "@pascal-app/mcp/tools/shared-tools";
+import { builtinAgentOperations } from "@pascal-app/nodes/agent-operations";
+import { builtinAgentTools } from "@pascal-app/nodes/agent-tools";
 import type { ZodType } from "zod";
 import type { Extra } from "../context.js";
 import type { SceneGraphJson } from "./projects.js";
@@ -66,6 +69,22 @@ function pascal(): Runtime {
     catalog: () => activeCatalog(),
     assetViews: (subjects, options) => activeAssetViews(subjects, options),
   });
+  // The kitchen's tools, which Pascal's built-in kinds bring besides the shared ones (Luw Studio's
+  // kitchen_add_run lays a modular kitchen out), registered the way Pascal's MCP README says a host does.
+  const kitchenOperations = builtinAgentOperations as unknown as Record<string, Parameters<typeof registerOperationTool>[2]["operation"]>;
+  for (const contract of builtinAgentTools.tools) {
+    const operation = kitchenOperations[contract.name];
+    if (contract.runsIn !== "operation" || !operation) continue;
+    registerOperationTool(collector, operations, {
+      contract,
+      operation,
+      annotations: {
+        readOnlyHint: contract.name === "kitchen_check_clearance",
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+    } as unknown as Parameters<typeof registerOperationTool>[2]);
+  }
   runtime = { bridge, tools };
   return runtime;
 }

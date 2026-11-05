@@ -58,6 +58,7 @@
     "@modelcontextprotocol/server": "2.4.0",
     "@pascal-app/core": "file:vendor/pascal-app-core-1.0.6-luw.tgz",
     "@pascal-app/mcp": "file:vendor/pascal-app-mcp-1.0.6-luw.tgz",
+    "@pascal-app/nodes": "file:vendor/pascal-app-nodes-1.0.6-luw.tgz",
     "@types/node": "^18.19.130",
     "esbuild": "^0.25.12",
     "typescript": "^5.9.3",

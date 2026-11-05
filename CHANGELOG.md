@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `kitchen_add_run` lays a modular kitchen in a Studio project, the kind Studio's Build tab draws: along one wall, or two or three walls that meet at inside corners (a straight run, an L or a U), with a fridge, the sink and a dishwasher, a cooktop with worktop either side, a wall cabinet above each base module and a hood over the cooktop. It stops at doors, at windows whose sill is below the worktop and at other cabinets; a short wall gives up the lesser pieces first, and a cooktop or sink with no room moves to another wall. `modules` lays a wall out by hand. `kitchen_finish_run` aligns a run or closes small gaps at its ends. The guide sends kitchens to it instead of catalog counters.
+- `scripts/vendor-pascal.mjs` vendors Pascal's built-in kinds (`@pascal-app/nodes`) too, for their agent tools; its tarball leaves out the editor, viewer and React Three Fiber peers the tools never load.
+
 ## 0.3.6
 
 - Studio tools run Pascal's scene tools as Luw Studio runs them after its 2026-11-05 merge. `move_node` moves one node the way the editor's move tool does (a door, window or wall item slides along its wall and stays on it; a ceiling item keeps its drop) and `duplicate_node` copies one; `verify_scene` catches more of what is wrong in a built house, with fewer false alarms; `search_assets` ranks its matches and caps each query at 24 (a limit up to 60); walls mend T-junction cracks and rise to a raised upper floor; doors draw their hardware.
