@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.6
+
+- Studio tools run Pascal's scene tools as Luw Studio runs them after its 2026-11-05 merge. `move_node` moves one node the way the editor's move tool does (a door, window or wall item slides along its wall and stays on it; a ceiling item keeps its drop) and `duplicate_node` copies one; `verify_scene` catches more of what is wrong in a built house, with fewer false alarms; `search_assets` ranks its matches and caps each query at 24 (a limit up to 60); walls mend T-junction cracks and rise to a raised upper floor; doors draw their hardware.
+- `furnish_room` dresses a living room, bedroom or dining room as Luw Studio's assistant does: the largest flat rug that leaves a quarter of the room clear, in its middle, and a floor plant in a free corner, from the catalog.
+
 ## 0.3.5
 
 - Studio tools run Pascal's scene tools as Luw Studio runs them after its 2026-10-31 merge. `set_wall_type` gives standard walls an assembly (its layers and thickness); a room can be a porch, deck or patio, with its posts and beam; a column can be a framing post. Unpainted walls take Pascal's defaults now: a soft grey inside, raw drywall outside until a cladding or paint is chosen.
