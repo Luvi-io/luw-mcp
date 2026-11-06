@@ -1,6 +1,6 @@
 {
   "name": "@luw-ai/mcp",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "Official Luw.ai MCP server: AI interior, exterior, landscape, render, video and 3D design tools for Claude, Cursor, VS Code, Windsurf and any MCP client.",
   "mcpName": "ai.luw/mcp",
   "license": "MIT",
@@ -63,6 +63,6 @@
     "esbuild": "^0.25.12",
     "typescript": "^5.9.3",
     "vitest": "^3.2.7",
-    "zod": "~4.5.4"
+    "zod": "~4.6.7"
   }
 }

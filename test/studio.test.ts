@@ -75,7 +75,7 @@ describe("studio toolset", () => {
     const { client } = await connect(fakeLuw().fetch, {}, STUDIO);
     const tools = (await client.listTools()).tools;
     const names = tools.map((t) => t.name);
-    for (const name of ["luw_studio_list_projects", "luw_studio_create_project", "luw_studio_rename_project", "luw_studio_undo", "create_room", "furnish_room", "add_door", "get_level_summary", "paint", "get_site", "place_building", "add_fence", "run_batch", "set_checkpoint", "view_assets", "place_design", "set_ground_level", "kitchen_add_run", "kitchen_finish_run"]) {
+    for (const name of ["luw_studio_list_projects", "luw_studio_create_project", "luw_studio_rename_project", "luw_studio_undo", "create_room", "furnish_room", "add_door", "get_level_summary", "paint", "get_site", "place_building", "add_fence", "run_batch", "set_checkpoint", "view_assets", "place_design", "set_ground_level", "kitchen_add_run", "kitchen_finish_run", "bathroom_add"]) {
       expect(names).toContain(name);
     }
     for (const name of ["add_object", "view_scene", "clear_scene", "undo", "redo", "export_glb", "save_scene", "load_scene", "author_scene", "design_brief", "kitchen_check_clearance"]) {
@@ -277,6 +277,30 @@ describe("studio toolset", () => {
     expect(ofType(saved, "cabinet-module").length).toBeGreaterThan(8);
     const finished = await json("kitchen_finish_run", { runId: kitchen.runId, action: "fill" });
     expect(finished.runId).toBe(kitchen.runId);
+  });
+
+  it("lays a bathroom with Luw Studio's bathroom_add: Bath Space's toilet, vanity and shower, which verify_scene reads", async () => {
+    const p = studioProject();
+    const { call } = await connect(p.luw.fetch, {}, STUDIO);
+    const json = async (name: string, args: Record<string, unknown>) => {
+      const result = await call(name, { project_id: 7, ...args });
+      expect(result.isError, textOf(result)).toBeFalsy();
+      return JSON.parse((result.content[0] as { text: string }).text);
+    };
+    const levelId = (await json("list_levels", {})).levels[0].id;
+    const room = await json("create_room", { levelId, name: "Bathroom", polygon: [[0, 0], [2.8, 0], [2.8, 2.4], [0, 2.4]], doors: [{ wallIndex: 2, t: 0.75 }] });
+    const bathroom = await json("bathroom_add", { roomId: room.zoneId });
+    const kinds = bathroom.fixtures.map((f: { kind: string }) => f.kind);
+    expect(kinds).toEqual(expect.arrayContaining(["wall-hung toilet", "vanity", "shower glass"]));
+    const saved = JSON.parse(p.trainings.get(8)!.extras) as { nodes: Record<string, { type: string; parentId?: string }> };
+    const fixtures = Object.values(saved.nodes).filter((n) => n.type.startsWith("bath-space:"));
+    expect(fixtures.map((n) => n.type)).toEqual(expect.arrayContaining(["bath-space:wall-hung-toilet", "bath-space:wall-mounted-vanity", "bath-space:shower-divider"]));
+    // A wall holding a fixture is read, not called schema_invalid (Luw Studio's verify_scene).
+    const verified = await json("verify_scene", {});
+    expect(JSON.stringify(verified.issues ?? [])).not.toContain("schema_invalid");
+    const again = await call("bathroom_add", { project_id: 7, roomId: room.zoneId });
+    expect(again.isError).toBe(true);
+    expect(textOf(again)).toContain("bathroom_not_empty");
   });
 
   it("keeps the assistant's checkpoints from call to call, as Pascal's server does for a connection", async () => {

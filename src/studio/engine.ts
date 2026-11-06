@@ -18,6 +18,7 @@ import { builtinAgentOperations } from "@pascal-app/nodes/agent-operations";
 import { builtinAgentTools } from "@pascal-app/nodes/agent-tools";
 import type { ZodType } from "zod";
 import type { Extra } from "../context.js";
+import { registerBathSpace } from "./bath-space/register.js";
 import type { SceneGraphJson } from "./projects.js";
 
 // Pascal's own MCP tools (@pascal-app/mcp, MIT), run headless on Pascal's core store: the same tools
@@ -69,8 +70,10 @@ function pascal(): Runtime {
     catalog: () => activeCatalog(),
     assetViews: (subjects, options) => activeAssetViews(subjects, options),
   });
-  // The kitchen's tools, which Pascal's built-in kinds bring besides the shared ones (Luw Studio's
-  // kitchen_add_run lays a modular kitchen out), registered the way Pascal's MCP README says a host does.
+  // The kitchen's and bathroom's tools, which Pascal's built-in kinds bring besides the shared ones (Luw
+  // Studio's kitchen_add_run lays a modular kitchen out, bathroom_add a bathroom with Bath Space's fixtures,
+  // whose kinds register here), registered the way Pascal's MCP README says a host does.
+  registerBathSpace();
   const kitchenOperations = builtinAgentOperations as unknown as Record<string, Parameters<typeof registerOperationTool>[2]["operation"]>;
   for (const contract of builtinAgentTools.tools) {
     const operation = kitchenOperations[contract.name];
