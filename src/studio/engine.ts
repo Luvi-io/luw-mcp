@@ -2,12 +2,14 @@ import { McpServer } from "@modelcontextprotocol/server";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AssetInput } from "@pascal-app/core";
 import {
+  type AssetCatalogSource,
   type AssetViewLoader,
   createAssetViewLoader,
   createFetchAssetViewIO,
   parseSessionRecord,
   recordMade,
   type SceneNodes,
+  searchAssetList,
 } from "@pascal-app/core/agent-operations";
 import useScene from "@pascal-app/core/store";
 import { SceneBridge } from "@pascal-app/mcp/bridge";
@@ -46,6 +48,17 @@ interface Runtime {
 let runtime: Runtime | null = null;
 /** The catalog the call in progress reads (a call's server may have its own catalog address). */
 let activeCatalog: () => Promise<readonly AssetInput[]> = async () => [];
+/**
+ * The catalog as Pascal's tools take one they don't hold whole (a list is handed over at registration,
+ * Luw's is read per call): a search runs on the call's list as Pascal searches a list, and a lookup by
+ * ids answers with the whole list. Pascal's tools look an item up by its id in what they get, and Luw
+ * Studio's furnish_room chooses from the whole catalog (Luw's rugs, plants and smaller bathroom pieces),
+ * where Pascal asks only for its own set for the room.
+ */
+const studioCatalog: AssetCatalogSource = {
+  search: async (query) => searchAssetList(await activeCatalog(), query),
+  byId: async () => [...(await activeCatalog())],
+};
 /** Pascal's own reader of catalog models and pictures, for absolute links. */
 const plainAssetViews = createAssetViewLoader(createFetchAssetViewIO());
 /** What view_assets and paint read of catalog pieces in the call in progress (Studio's links are relative). */
@@ -67,7 +80,7 @@ function pascal(): Runtime {
     return { enable() {}, disable() {}, remove() {}, update() {} };
   }) as unknown as McpServer["registerTool"];
   registerTools(collector, operations, {
-    catalog: () => activeCatalog(),
+    catalog: studioCatalog,
     assetViews: (subjects, options) => activeAssetViews(subjects, options),
   });
   // The kitchen's and bathroom's tools, which Pascal's built-in kinds bring besides the shared ones (Luw
@@ -78,15 +91,20 @@ function pascal(): Runtime {
   for (const contract of builtinAgentTools.tools) {
     const operation = kitchenOperations[contract.name];
     if (contract.runsIn !== "operation" || !operation) continue;
-    registerOperationTool(collector, operations, {
-      contract,
-      operation,
-      annotations: {
-        readOnlyHint: contract.name === "kitchen_check_clearance",
-        destructiveHint: false,
-        openWorldHint: false,
-      },
-    } as unknown as Parameters<typeof registerOperationTool>[2]);
+    registerOperationTool(
+      collector,
+      operations,
+      {
+        contract,
+        operation,
+        annotations: {
+          readOnlyHint: contract.name === "kitchen_check_clearance",
+          destructiveHint: false,
+          openWorldHint: false,
+        },
+      } as unknown as Parameters<typeof registerOperationTool>[2],
+      studioCatalog,
+    );
   }
   runtime = { bridge, tools };
   return runtime;
@@ -136,7 +154,9 @@ export function runOnScene(
 ): Promise<SceneRun> {
   const { bridge } = pascal();
   return exclusive(async () => {
-    activeCatalog = catalog;
+    // Read once for the call: Pascal's tools ask the source for each search and lookup at once.
+    let read: Promise<readonly AssetInput[]> | undefined;
+    activeCatalog = () => (read ??= catalog());
     activeAssetViews = assetViews;
     // Nothing of the last call's project may remain: loadDefault keeps a scene already in the store,
     // and setScene keeps the plugin state of a scene that names none.

@@ -1,4 +1,6 @@
+import type { AssetInput } from "@pascal-app/core";
 import { describe, expect, it } from "vitest";
+import { FALLBACK_CATALOG } from "../src/studio/catalog.js";
 import { connect, fakeLuw, textOf, type Recorded } from "./helpers.js";
 
 // The studio toolset against a fake Luw.ai API that keeps one project's trainings in memory.
@@ -254,6 +256,95 @@ describe("studio toolset", () => {
     const saved = p.trainings.get(8)!.extras;
     expect(ofType(saved, "wall").length).toBe(8);
     expect(ofType(saved, "door")).toHaveLength(1);
+  });
+
+  it("searches Studio's catalog and furnishes from all of it: Luw's rug and plant in a living room, Luw's vanity in a small bathroom", async () => {
+    // Studio's /api/catalog: Pascal's library and Luw's pieces, here a rug and a plant Pascal's starter list lacks.
+    const rug: AssetInput = { id: "luw-rug-wool", category: "furniture", name: "Wool Rug", tags: ["rug", "floor", "living"], thumbnail: "/items/luw/luw-rug-wool/thumbnail.webp", src: "/items/luw/luw-rug-wool/model.glb", dimensions: [2.4, 0.02, 1.7], offset: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] };
+    const plant: AssetInput = { id: "luw-fiddle-fig", category: "furniture", name: "Fiddle Leaf Fig", tags: ["plant", "floor", "living"], thumbnail: "/items/luw/luw-fiddle-fig/thumbnail.webp", src: "/items/luw/luw-fiddle-fig/model.glb", dimensions: [0.6, 1.6, 0.6], offset: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] };
+    const url = "https://studio.test/api/catalog/en";
+    const p = studioProject();
+    p.luw.on("GET", url, () => ({ items: [...FALLBACK_CATALOG, rug, plant] }));
+    const { call } = await connect(p.luw.fetch, {}, { ...STUDIO, LUW_STUDIO_CATALOG_URL: url });
+    const json = async (name: string, args: Record<string, unknown>) => {
+      const result = await call(name, { project_id: 7, ...args });
+      expect(result.isError, textOf(result)).toBeFalsy();
+      return JSON.parse((result.content[0] as { text: string }).text);
+    };
+    const found = await json("search_assets", { queries: [{ query: "vanity" }, { query: "rug" }, { query: "fig plant" }] });
+    const ids = (group: { results: { id: string }[] }) => group.results.map((item) => item.id);
+    expect(ids(found.groups[0])).toEqual(expect.arrayContaining(["luw-vanity-single", "luw-vanity-compact"]));
+    expect(ids(found.groups[1])).toEqual(["luw-rug-wool"]);
+    expect(ids(found.groups[2])).toEqual(["luw-fiddle-fig"]);
+    const levelId = (await json("list_levels", {})).levels[0].id;
+    const living = await json("create_room", { levelId, name: "Living", polygon: [[0, 0], [6, 0], [6, 5], [0, 5]], doors: [{ wallIndex: 0 }], windows: [{ wallIndex: 2 }] });
+    const dressed = JSON.stringify(await json("furnish_room", { zoneId: living.zoneId, roomType: "living" }));
+    // furnish_room reads the whole catalog, not only Pascal's set for the room: its rug and plant are Luw's.
+    expect(dressed).toContain("Wool Rug (2.4 × 1.7 m)");
+    expect(dressed).toContain("Fiddle Leaf Fig");
+    // 2.5 m square: Pascal's 2 m double vanity can't share the back wall with the toilet, Luw's single one does.
+    const bath = await json("create_room", { levelId, name: "Bathroom", polygon: [[6, 0], [8.5, 0], [8.5, 2.5], [6, 2.5]] });
+    const furnished = await json("furnish_room", { zoneId: bath.zoneId, roomType: "bathroom" });
+    expect(furnished.pieces.join(" | ")).toContain("Single Vanity (0.6 × 0.46 m)");
+    expect(JSON.stringify(furnished)).not.toContain("bathroom-sink");
+    const items = ofType(p.trainings.get(8)!.extras, "item").map((n) => (n.asset as { id: string }).id);
+    expect(items).toEqual(expect.arrayContaining(["luw-rug-wool", "luw-fiddle-fig", "luw-vanity-single", "sofa"]));
+    // Fetched once for every call (cached for an hour).
+    expect(p.luw.calls.filter((c) => c.url.href === url)).toHaveLength(1);
+  });
+
+  it("keeps a window and a door Studio saved with Pascal's newer options through edits: a tilt-and-turn window with shutters, a 6-leaf folding door", async () => {
+    // Made with the tools, then given what Studio's inspector sets since its 2026-11-07 merge.
+    const first = studioProject();
+    const made = await connect(first.luw.fetch, {}, STUDIO);
+    const make = async (name: string, args: Record<string, unknown>) => {
+      const result = await made.call(name, { project_id: 7, ...args });
+      expect(result.isError, textOf(result)).toBeFalsy();
+      return JSON.parse((result.content[0] as { text: string }).text);
+    };
+    const levelId = (await make("list_levels", {})).levels[0].id;
+    const { wallId } = await make("add_wall", { levelId, start: [0, 0], end: [6, 0] });
+    await make("add_door", { wallId, t: 0.3, width: 2.4 });
+    await make("add_window", { wallId, t: 0.8, width: 1, height: 1.2 });
+    const studioScene = scene(first.trainings.get(8)!.extras);
+    const door = Object.assign(Object.values(studioScene.nodes).find((n) => n.type === "door")!, { doorType: "folding", leafCount: 6, handleStyle: "bar" });
+    const win = Object.assign(Object.values(studioScene.nodes).find((n) => n.type === "window")!, {
+      windowType: "tilt-turn",
+      tiltTurnMode: "turn",
+      openingDirection: "inward",
+      shutters: "louvered",
+      shutterSides: "both",
+      shutterOpen: 1,
+    });
+    const studioSaved = structuredClone(studioScene);
+
+    const p = studioProject([{ id: 1, slot: 8, extras: JSON.stringify(studioScene) }]);
+    const { call } = await connect(p.luw.fetch, {}, STUDIO);
+    const json = async (name: string, args: Record<string, unknown>) => {
+      const result = await call(name, { project_id: 7, ...args });
+      expect(result.isError, textOf(result)).toBeFalsy();
+      return JSON.parse((result.content[0] as { text: string }).text);
+    };
+    // An edit elsewhere keeps both as Studio saved them.
+    await json("add_wall", { levelId, start: [6, 0], end: [6, 4] });
+    const afterWall = scene(p.trainings.get(8)!.extras);
+    expect(afterWall.nodes[door.id as string]).toEqual(studioSaved.nodes[door.id as string]);
+    expect(afterWall.nodes[win.id as string]).toEqual(studioSaved.nodes[win.id as string]);
+    // The tools read them as they are, and verify_scene finds nothing invalid in them.
+    expect(await json("get_node", { id: door.id })).toMatchObject({ node: { doorType: "folding", leafCount: 6, handleStyle: "bar" } });
+    expect(await json("get_node", { id: win.id })).toMatchObject({ node: { windowType: "tilt-turn", tiltTurnMode: "turn", shutters: "louvered" } });
+    const verified = JSON.stringify(await json("verify_scene", {}));
+    expect(verified).not.toMatch(new RegExp(`schema_invalid[^}]*(${door.id}|${win.id})`));
+    // And an edit of their own: a knob, the sash tilted, the shutters closed.
+    await json("apply_patch", {
+      patches: [
+        { op: "update", id: door.id, data: { handleStyle: "knob" } },
+        { op: "update", id: win.id, data: { tiltTurnMode: "tilt", shutterOpen: 0 } },
+      ],
+    });
+    const edited = scene(p.trainings.get(8)!.extras);
+    expect(edited.nodes[door.id as string]).toMatchObject({ doorType: "folding", leafCount: 6, handleStyle: "knob" });
+    expect(edited.nodes[win.id as string]).toMatchObject({ windowType: "tilt-turn", tiltTurnMode: "tilt", openingDirection: "inward", shutters: "louvered", shutterSides: "both", shutterOpen: 0 });
   });
 
   it("lays a modular kitchen with Luw Studio's kitchen_add_run: an L with a sink, a cooktop and wall cabinets", async () => {
