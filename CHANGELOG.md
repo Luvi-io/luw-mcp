@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.8
+
+- `bathroom_add` lays a bathroom out in a Studio project with Bath Space's fixtures, the bathroom pieces Studio's Build tab places: a wall-hung or floor toilet with its flush plate and paper holder, a wall vanity with a basin, mixer and mirror, a walk-in shower or a bath in a corner, and a towel rail, each against a wall of the room with room to use it, clear of the door's swing and the windows. The guide sends bathrooms to it instead of catalog pieces. The server knows Bath Space's fixtures by their schemas only (`scripts/vendor-bath-space.mjs` copies them from the plugin, MIT); Studio draws them.
+- `verify_scene` reads a wall that holds a Bath Space fixture instead of calling it invalid, so a bathroom no longer hides its walls and door from the check.
+- Scene tools take a plugin's node (a Bath Space fixture) by the schema its kind registered, where Pascal's parser knew only its own kinds.
+- zod 4.6, the version Pascal's packages use, so the server runs one copy.
+
 ## 0.3.7
 
 - `kitchen_add_run` lays a modular kitchen in a Studio project, the kind Studio's Build tab draws: along one wall, or two or three walls that meet at inside corners (a straight run, an L or a U), with a fridge, the sink and a dishwasher, a cooktop with worktop either side, a wall cabinet above each base module and a hood over the cooktop. It stops at doors, at windows whose sill is below the worktop and at other cabinets; a short wall gives up the lesser pieces first, and a cooktop or sink with no room moves to another wall. `modules` lays a wall out by hand. `kitchen_finish_run` aligns a run or closes small gaps at its ends. The guide sends kitchens to it instead of catalog counters.
