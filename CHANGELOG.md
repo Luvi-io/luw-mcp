@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.7
 
 - `kitchen_add_run` lays a modular kitchen in a Studio project, the kind Studio's Build tab draws: along one wall, or two or three walls that meet at inside corners (a straight run, an L or a U), with a fridge, the sink and a dishwasher, a cooktop with worktop either side, a wall cabinet above each base module and a hood over the cooktop. It stops at doors, at windows whose sill is below the worktop and at other cabinets; a short wall gives up the lesser pieces first, and a cooktop or sink with no room moves to another wall. `modules` lays a wall out by hand. `kitchen_finish_run` aligns a run or closes small gaps at its ends. The guide sends kitchens to it instead of catalog counters.
 - `scripts/vendor-pascal.mjs` vendors Pascal's built-in kinds (`@pascal-app/nodes`) too, for their agent tools; its tarball leaves out the editor, viewer and React Three Fiber peers the tools never load.
