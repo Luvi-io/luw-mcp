@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.9
+
+- Studio tools run Pascal's scene tools as Luw Studio runs them after its 2026-11-07 merge. Doors and windows take Pascal's new options, in `add_door`, `add_window` and `create_room`'s openings: a tilt-and-turn window (tilted or turned open), which way a sash opens and its hinge side, exterior shutters, a roller shutter, an interior sill, a sash handle and panes per sash; sidelights and a transom beside and over a swing door, folding doors of 2, 4, 6 or 8 leaves, sliding doors of up to 4 and a bypass closet, and a handle style (lever, curved lever, knob, bar or plate). `paint` finishes a window's hardware and shutters. A project Studio saved with any of these loads and edits as it is, where 0.3.8 read those doors and windows as invalid and left them out of the level's counts. Tool descriptions say what each tool returns.
+- `search_assets`, `furnish_room` and the other furnishing tools read Studio's catalog as before. Pascal's tools now take a catalog they search instead of being handed it whole: Luw's answers from the list Studio serves, read once a call, and `furnish_room` still chooses its rug, plant and bathroom pieces from all of it, Luw's included.
+
 ## 0.3.8
 
 - `bathroom_add` lays a bathroom out in a Studio project with Bath Space's fixtures, the bathroom pieces Studio's Build tab places: a wall-hung or floor toilet with its flush plate and paper holder, a wall vanity with a basin, mixer and mirror, a walk-in shower or a bath in a corner, and a towel rail, each against a wall of the room with room to use it, clear of the door's swing and the windows. The guide sends bathrooms to it instead of catalog pieces. The server knows Bath Space's fixtures by their schemas only (`scripts/vendor-bath-space.mjs` copies them from the plugin, MIT); Studio draws them.
