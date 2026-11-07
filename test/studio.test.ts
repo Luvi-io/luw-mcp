@@ -99,8 +99,8 @@ describe("studio toolset", () => {
     expect(retired.isError).toBe(true);
     expect(textOf(retired)).toContain("tool_retired");
     expect(textOf(retired)).toContain("find_by_type");
-    // Only Luw's own Studio tools credit Pascal (its starter scenes); none of Pascal's says it is the library.
-    const naming = tools.filter((t) => !t.name.startsWith("luw_") && /\bPascal\b/.test(JSON.stringify(t)));
+    // None says it is the library (luw-name.test.ts checks every name).
+    const naming = tools.filter((t) => /\bPascal\b/.test(JSON.stringify(t)));
     expect(naming.map((t) => t.name)).toEqual([]);
   });
 

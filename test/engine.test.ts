@@ -152,6 +152,11 @@ describe("engine entry", () => {
     expect(parseScene("")).toEqual({ kind: "empty" });
     const legacy = parseScene(JSON.stringify(graph));
     expect(legacy.kind === "scene" && legacy.legacy).toBe(true);
+    // Studio's stamp under its new name reads as Studio's too; anything else is legacy.
+    const renamed = parseScene(JSON.stringify({ ...graph, luwFormat: "luw-1" }));
+    expect(renamed.kind === "scene" && renamed.legacy).toBe(false);
+    const other = parseScene(JSON.stringify({ ...graph, luwFormat: "luw-2" }));
+    expect(other.kind === "scene" && other.legacy).toBe(true);
   });
 
   it("writes the guide for a host that has the project open, without the MCP workflow", async () => {

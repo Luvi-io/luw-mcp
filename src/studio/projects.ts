@@ -20,7 +20,9 @@ const UNDO_SLOT = 1009;
 const SESSION_SLOT = 1011;
 const SESSION_IDLE_MS = 60 * 60 * 1000;
 /** What Studio writes into a scene it saved; a scene without it is a 0.9 Studio ("legacy") project. */
-export const SCENE_FORMAT = "pascal-1";
+export const SCENE_FORMAT = "pascal-1"; // Switch to "luw-1" once Studio writes it: Rails and every reader take both.
+/** The stamps a scene Studio saved carries: its new name and the old one. */
+const STUDIO_FORMATS: readonly unknown[] = ["luw-1", "pascal-1"];
 /**
  * Written to the persona's title after every edit. Studio never sets the title, so an open Studio tab
  * reads it from its project list (a few bytes) to notice an assistant's edit and load it.
@@ -160,7 +162,7 @@ export function parseScene(raw: string): StoredScene {
     throw new InputError("This project's scene is incomplete (no nodes). Open it in Luw Studio to repair it.");
   }
   const { luwFormat, ...graph } = data as SceneGraphJson & { luwFormat?: unknown };
-  return { kind: "scene", graph: graph as SceneGraphJson, legacy: luwFormat !== SCENE_FORMAT };
+  return { kind: "scene", graph: graph as SceneGraphJson, legacy: !STUDIO_FORMATS.includes(luwFormat) };
 }
 
 export function serializeScene(graph: SceneGraphJson): string {

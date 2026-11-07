@@ -1,5 +1,6 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z, type ZodType } from "zod";
+import { luwName, luwNamed } from "../luw-name.js";
 import type { PascalTool, PascalToolConfig } from "./engine.js";
 import { PASCAL_SCENE_RULES } from "./pascal-guide.js";
 
@@ -65,9 +66,6 @@ export const LEGACY =
 /** A project's id, as listed here or as Studio's Settings shows it ("luw-1252130"). */
 export const projectId = z.union([z.number().int().positive(), z.string().regex(/^(luw-)?\d+$/)]);
 
-/** Pascal's contracts and their inputs name its own library ("Pascal's materials"); here the library is Luw Studio's. */
-export const asLuwStudio = (text: string | undefined) => text?.replace(/\bPascal\b/g, "Luw Studio");
-
 /** Pascal's SDK v2 tools give a whole object schema, the v1 ones gave its fields: either way, the fields. */
 function pascalShape(schema: PascalToolConfig["inputSchema"]): Record<string, ZodType> {
   if (!schema) return {};
@@ -82,7 +80,7 @@ export function toolFields(tool: PascalTool): Record<string, ZodType> {
   const own = Object.fromEntries(
     Object.entries(pascalShape(tool.config.inputSchema))
       .filter(([key]) => !omit.has(key))
-      .map(([key, field]) => [key, field.description ? field.describe(asLuwStudio(field.description)!) : field]),
+      .map(([key, field]) => [key, field.description ? field.describe(luwName(field.description)) : field]),
   );
   return { ...own, ...HOST_INPUTS[tool.name]?.input };
 }
@@ -103,7 +101,7 @@ export function inputShape(tool: PascalTool): Record<string, ZodType> {
 /** A tool's description as Luw offers it: worded for Luw Studio, with what the host's inputs add. */
 export function toolDescription(tool: PascalTool): string | undefined {
   const added = HOST_INPUTS[tool.name]?.description;
-  return asLuwStudio(added ? `${tool.config.description ?? ""} ${added}`.trim() : tool.config.description);
+  return luwNamed(added ? `${tool.config.description ?? ""} ${added}`.trim() : tool.config.description);
 }
 
 /**
@@ -164,8 +162,8 @@ export function studioGuide(options: { forApi?: boolean } = {}): string {
     "# Luw Studio: editing projects",
     "",
     api
-      ? "Luw Studio (studio.luw.ai) designs buildings in 3D on Pascal's editor. These tools edit one Luw Studio project directly."
-      : "Luw Studio (studio.luw.ai) designs buildings in 3D on Pascal's editor. These tools edit the user's Luw Studio projects directly.",
+      ? "Luw Studio (studio.luw.ai) designs buildings in 3D. These tools edit one Luw Studio project directly."
+      : "Luw Studio (studio.luw.ai) designs buildings in 3D. These tools edit the user's Luw Studio projects directly.",
     "",
     ...(api ? API_WORKFLOW : MCP_WORKFLOW),
     "",

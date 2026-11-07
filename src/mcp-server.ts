@@ -3,6 +3,7 @@ import type { ZodType } from "zod";
 import { acceptAttachedPhoto } from "./attachments.js";
 import { API_KEY_URL, SERVER_NAME, VERSION, type LuwConfig } from "./config.js";
 import { createDeps } from "./context.js";
+import { answerInLuwName } from "./luw-name.js";
 import { registerPrompts } from "./prompts.js";
 import { registerResources, type ToolDoc } from "./resources.js";
 import { registerArchiGptTool } from "./tools/archigpt.js";
@@ -83,5 +84,6 @@ export function createLuwServer(config: LuwConfig, fetchImpl?: typeof fetch): Mc
   if (!local && sets.has("generate")) registerResultViewer(server);
   registerResources(server, deps, { instructions: instructions(config), tools });
   listToolsForChatGpt(server);
+  answerInLuwName(server);
   return server;
 }

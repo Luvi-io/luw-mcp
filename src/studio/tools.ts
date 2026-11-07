@@ -3,6 +3,7 @@ import { describeDesignSchema } from "@pascal-app/core/procedural-items";
 import { z } from "zod";
 import { handler, json, type Deps, type Extra, type Server, type ToolContext } from "../context.js";
 import { InputError } from "../files.js";
+import { luwName, luwNamed } from "../luw-name.js";
 import { loadCatalog, studioAssetViews } from "./catalog.js";
 import { answerRetiredTools } from "./retired-tools.js";
 import { inProject, inputShape, LEFT_OUT, LEGACY, projectId, REPLACES_SCENE, STORE_INPUTS, studioGuide, toolDescription } from "./catalog-of-tools.js";
@@ -96,9 +97,6 @@ async function runOnProject(tool: PascalTool, args: Record<string, unknown>, ctx
   }
 }
 
-/** Pascal's contracts and their inputs name its own library ("Pascal's materials"); here the library is Luw Studio's. */
-const asLuwStudio = (text: string | undefined) => text?.replace(/\bPascal\b/g, "Luw Studio");
-
 function registerPascalTool(server: Server, deps: Deps, tool: PascalTool) {
   const { title, outputSchema, annotations } = tool.config;
   const description = toolDescription(tool);
@@ -133,7 +131,7 @@ export function registerStudioTools(server: Server, deps: Deps) {
     {
       title: "Create a Luw Studio project",
       description:
-        "Creates a Luw Studio project for a new design: an empty site with one level, or one of Pascal's starter scenes (list_templates). Returns its project_id and studio_url.",
+        "Creates a Luw Studio project for a new design: an empty site with one level, or a starter scene from list_templates. Returns its project_id and studio_url.",
       inputSchema: {
         name: z.string().min(1).max(120).describe("The project's name."),
         template: z.string().optional().describe("A template id from list_templates. Omit for an empty site."),
@@ -147,7 +145,7 @@ export function registerStudioTools(server: Server, deps: Deps) {
         let scene = serializeScene(start);
         if (a.template) {
           const run = await runOnScene(start, pascalTools().get("create_from_template")!, { id: a.template }, extra, async () => []);
-          if (run.result.isError) return run.result;
+          if (run.result.isError) return luwNamed(run.result);
           scene = serializeScene(run.graph);
         }
         const id = await createProject(ctx, a.name.trim(), scene);
@@ -207,6 +205,6 @@ export function registerStudioTools(server: Server, deps: Deps) {
       description: "JSON Schema, limits, rules and an example for designs (procedural items) that place_design places. validate_design is the authority.",
       mimeType: "application/json",
     },
-    async (uri) => ({ contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify(describeDesignSchema()) }] }),
+    async (uri) => ({ contents: [{ uri: uri.href, mimeType: "application/json", text: luwName(JSON.stringify(describeDesignSchema())) }] }),
   );
 }

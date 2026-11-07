@@ -9,6 +9,7 @@
 
 import { z } from "zod";
 import { STUDIO_CATALOG_URL } from "../config.js";
+import { luwNamed } from "../luw-name.js";
 import { flattenTuples } from "../schema-compat.js";
 import { loadCatalog as loadStudioCatalog, studioAssetViews as studioViews } from "../studio/catalog.js";
 import {
@@ -184,13 +185,13 @@ function jsonSchema(tool: PascalTool): Record<string, unknown> {
  * has the project open). The schemas have no tuples.
  */
 export function apiToolDefinitions(): ToolDefinition[] {
-  return offered().map((tool) => ({
+  return luwNamed(offered().map((tool) => ({
     name: tool.name,
     ...(tool.config.title ? { title: tool.config.title } : {}),
     description: toolDescription(tool) ?? tool.name,
     input_schema: jsonSchema(tool),
     read_only: tool.config.annotations?.readOnlyHint === true,
-  }));
+  })));
 }
 
 const refusal = (text: string): ToolResult => ({ content: [{ type: "text", text }], isError: true });
@@ -243,7 +244,7 @@ export async function runToolOnGraph(
     session,
     studioViews(catalogUrl, fetchImpl),
   );
-  const result = done.result as unknown as ToolResult;
+  const result = luwNamed(done.result) as unknown as ToolResult;
   // As the MCP server answers: a read or a refusal as the tool gave it, an edit naming the project.
   if (tool.config.annotations?.readOnlyHint === true || result.isError) return unchanged(result, done.session);
   const answer = options.projectId === undefined ? result : (inProject(result as never, options.projectId) as unknown as ToolResult);
