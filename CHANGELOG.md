@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.10
+
+- The package has a second entry, `@luw-ai/mcp/engine` (`dist/engine.js`, ESM, with its declarations in `dist/engine.d.ts`): the Studio scene tools without the MCP server, for a host that holds a project's scene itself and runs the tools on it in its own process, as Luw.ai Studio's API does. `apiToolDefinitions()` lists the tools the Studio toolset offers as `{name, description, input_schema}` (the same descriptions and inputs, no `project_id`, no tuples); `runToolOnGraph(graph, session, name, args)` runs one on a scene graph with the checks the MCP server makes (the tool's schema, its units and defaults, no template over a built scene, no edit that empties the project) and says whether it changed the scene; `studioGuide({ forApi: true })` is the guide without the MCP workflow. `defaultScene`, `parseScene`, `serializeScene`, `contentCount` and `loadCatalog` come along. Importing it makes no network call. `npx @luw-ai/mcp` and the hosted server are unchanged.
+- Which of Pascal's tools Luw offers, their inputs and the guide live in one place (`src/studio/catalog-of-tools.ts`), shared by the MCP server and the engine; the server's tool list and guide are byte for byte what 0.3.9 listed.
+
 ## 0.3.9
 
 - Studio tools run Pascal's scene tools as Luw Studio runs them after its 2026-11-07 merge. Doors and windows take Pascal's new options, in `add_door`, `add_window` and `create_room`'s openings: a tilt-and-turn window (tilted or turned open), which way a sash opens and its hinge side, exterior shutters, a roller shutter, an interior sill, a sash handle and panes per sash; sidelights and a transom beside and over a swing door, folding doors of 2, 4, 6 or 8 leaves, sliding doors of up to 4 and a bypass closet, and a handle style (lever, curved lever, knob, bar or plate). `paint` finishes a window's hardware and shutters. A project Studio saved with any of these loads and edits as it is, where 0.3.8 read those doors and windows as invalid and left them out of the level's counts. Tool descriptions say what each tool returns.

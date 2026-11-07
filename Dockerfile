@@ -6,7 +6,7 @@ COPY package.json package-lock.json ./
 # Pascal's core and MCP as Luw Studio builds them (scripts/vendor-pascal.mjs).
 COPY vendor ./vendor
 RUN npm ci --no-audit --no-fund
-COPY tsconfig.json ./
+COPY tsconfig.json tsconfig.engine.json ./
 COPY scripts ./scripts
 COPY src ./src
 RUN npm run build
