@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.11
+
+- Everything the Studio tools serve names Luw Studio: the tool list, `luw://studio/guide`, `luw://studio/design-schema` and each scene tool's answer, its refusals and input errors included, from the MCP server and from `@luw-ai/mcp/engine` alike. `validate_design` and `place_design` point at `luw://studio/design-schema`. Ids a model sends back keep their spelling, and Luw's own tools answer as before.
+- A scene stamped `luw-1`, the new name of Studio's scene stamp, reads as Studio's, as one stamped `pascal-1` does. Scenes are still written `pascal-1` until Studio writes the new one.
+
 ## 0.3.10
 
 - The package has a second entry, `@luw-ai/mcp/engine` (`dist/engine.js`, ESM, with its declarations in `dist/engine.d.ts`): the Studio scene tools without the MCP server, for a host that holds a project's scene itself and runs the tools on it in its own process, as Luw.ai Studio's API does. `apiToolDefinitions()` lists the tools the Studio toolset offers as `{name, description, input_schema}` (the same descriptions and inputs, no `project_id`, no tuples); `runToolOnGraph(graph, session, name, args)` runs one on a scene graph with the checks the MCP server makes (the tool's schema, its units and defaults, no template over a built scene, no edit that empties the project) and says whether it changed the scene; `studioGuide({ forApi: true })` is the guide without the MCP workflow. `defaultScene`, `parseScene`, `serializeScene`, `contentCount` and `loadCatalog` come along. Importing it makes no network call. `npx @luw-ai/mcp` and the hosted server are unchanged.
