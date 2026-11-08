@@ -4,7 +4,7 @@ import { connect, fakeLuw, textOf } from "./helpers.js";
 // What the server and the engine entry hand a model or a user names Luw Studio, never the editor it runs on.
 
 /** Ids a model may have to send back as they are: luwName (src/luw-name.ts) keeps them. */
-const IDENTIFIERS = ["pascal:core", "pascalNodeId"];
+const IDENTIFIERS = ["pascalNodeId"];
 const named = (text: string) => IDENTIFIERS.reduce((rest, id) => rest.replaceAll(id, ""), text).match(/.{0,60}pascal.{0,60}/gi) ?? [];
 
 const ALL = { LUW_TOOLSETS: "all", LUW_STUDIO_CATALOG_URL: "" };
@@ -58,6 +58,16 @@ describe("Luw Studio's name", () => {
     expect(run.result.isError).toBe(true);
     expect(run.result.content[0]!.text).toContain("This Luw Studio server cannot run geometry scripts.");
     expect(named(JSON.stringify(run.result))).toEqual([]);
+  });
+
+  it("hands a scene's ids out as luw:, and reads them back as the scene spells them", async () => {
+    const { luwNamed, studioIds } = await import("../src/luw-name.js");
+    const scene = { installedPlugins: ["pascal:trees", "webxr:core"], plugins: { "pascal:pool": { on: true } }, $schema: "pascal://schema/design" };
+    const out = luwNamed(scene);
+    expect(out).toEqual({ installedPlugins: ["luw:trees", "webxr:core"], plugins: { "luw:pool": { on: true } }, $schema: "luw://studio/design-schema" });
+    expect(luwNamed('{"installedPlugins":["pascal:landscape"]}')).toBe('{"installedPlugins":["luw:landscape"]}');
+    expect(studioIds(out)).toEqual({ ...scene, $schema: "luw://studio/design-schema" });
+    expect(studioIds({ note: "luw: is the prefix", ref: "luw://studio/guide" })).toEqual({ note: "luw: is the prefix", ref: "luw://studio/guide" });
   });
 
   it("leaves the answers of Luw's own tools as they are: they are the user's", async () => {

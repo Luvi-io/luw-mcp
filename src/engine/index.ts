@@ -32,7 +32,7 @@ import {
 import { parseScene as parseStored, SCENE_FORMAT as FORMAT, serializeScene as serialize } from "../studio/projects.js";
 import { VERSION } from "../version.js";
 
-/** A Luw Studio scene: Pascal's scene graph JSON, as Studio stores it without its `luwFormat` stamp. */
+/** A Luw Studio scene: the scene graph JSON, as Studio stores it without its `luwFormat` stamp. */
 export interface SceneGraphJson {
   nodes: Record<string, unknown>;
   rootNodeIds: string[];
@@ -97,7 +97,7 @@ export interface CatalogItem {
   [key: string]: unknown;
 }
 
-/** A Pascal tool as the engine holds it. */
+/** A scene tool as the engine holds it. */
 export interface EngineTool {
   name: string;
   config: {
@@ -117,10 +117,10 @@ export const SCENE_FORMAT: string = FORMAT;
 /** What a host answers when asked to edit a legacy scene (it can be read). */
 export const LEGACY_MESSAGE: string = LEGACY;
 
-/** Every Pascal tool the engine registered, Luw's left-out ones included (apiToolDefinitions leaves them out). */
+/** Every scene tool the engine registered, Luw's left-out ones included (apiToolDefinitions leaves them out). */
 export const pascalTools: () => ReadonlyMap<string, EngineTool> = tools as unknown as () => ReadonlyMap<string, EngineTool>;
 
-/** Pascal's starting scene for an empty project: a site, a building and one level. */
+/** The starting scene for an empty project: a site, a building and one level. */
 export const defaultScene: () => Promise<SceneGraphJson> = startingScene;
 
 /** Building content in a scene: everything but the site, building and level scaffold. */
@@ -141,7 +141,7 @@ export const loadCatalog: (url: string, fetchImpl: typeof fetch) => Promise<read
 /** What view_assets and paint read of a catalog piece, for runOnScene. */
 export const studioAssetViews: (catalogUrl: string, fetchImpl: typeof fetch) => unknown = studioViews;
 
-/** One Pascal tool on a scene, as the MCP server runs it, without Luw's checks: runToolOnGraph adds them. */
+/** One scene tool on a scene, as the MCP server runs it, without Luw's checks: runToolOnGraph adds them. */
 export const runOnScene: (
   graph: SceneGraphJson,
   tool: EngineTool,

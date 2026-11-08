@@ -331,9 +331,9 @@ Every generation uses your [Luw.ai credits](https://app.luw.ai/pricing). Variati
 | `luw_studio_create_project` | A new project: an empty site, or a starter house (`list_templates`) |
 | `luw_studio_rename_project` | Rename a project |
 | `luw_studio_undo` | Put back the scene from before the last assistant edit (again: redo) |
-| Scene tools | Pascal's editor tools, each taking a `project_id`: read (`get_level_summary`, `get_zones`, `get_walls`, `find_nodes`, `measure`, `verify_scene`, …) and build (`create_story_shell`, `create_room`, `add_wall`, `add_door`, `add_window`, `create_stair`, `create_roof`, `furnish_room`, `place_items`, `paint`, `apply_patch`, …) |
+| Scene tools | Luw Studio's editor tools, each taking a `project_id`: read (`get_level_summary`, `get_zones`, `get_walls`, `find_nodes`, `measure`, `verify_scene`, …) and build (`create_story_shell`, `create_room`, `add_wall`, `add_door`, `add_window`, `create_stair`, `create_roof`, `furnish_room`, `place_items`, `paint`, `apply_patch`, …) |
 
-The scene tools are [Pascal](https://github.com/pascalorg/editor)'s open-source MCP tools (MIT), running on the same core as Luw Studio, with its catalog (Luw's own pieces included) and its defaults. They don't use credits. A project last saved by the previous Luw Studio is readable; open it once in Studio to edit it here. `luw://studio/guide` is the building guide the assistant reads first.
+The scene tools run on the same core as Luw Studio, with its catalog (Luw's own pieces included) and its defaults. They don't use credits. A project last saved by the previous Luw Studio is readable; open it once in Studio to edit it here. `luw://studio/guide` is the building guide the assistant reads first.
 
 ## Resources
 
@@ -392,7 +392,7 @@ npm run inspector      # try every tool in the MCP Inspector
 LUW_API_KEY=... npm run smoke            # live checks against the real API (free)
 LUW_API_KEY=... npm run smoke -- --paid  # plus one real generation (1 credit)
 npm run mcpb           # build/luw.mcpb, the Claude Desktop extension
-node scripts/vendor-pascal.mjs ../luwstudio2  # rebuild vendor/: Pascal core + MCP as Luw Studio runs them
+node scripts/vendor-editor.mjs ../luwstudio2  # rebuild vendor/: the editor core + MCP as Luw Studio runs them
 ```
 
 ## Support
@@ -401,4 +401,4 @@ node scripts/vendor-pascal.mjs ../luwstudio2  # rebuild vendor/: Pascal core + M
 - Issues: [GitHub Issues](https://github.com/Luvi-io/luw-mcp/issues)
 - Email: [support@luvi.io](mailto:support@luvi.io)
 
-MIT © [Luvi Technologies, Inc.](https://www.luvi.io)
+MIT © [Luvi Technologies, Inc.](https://www.luvi.io). Bundled open-source components and their licenses: `dist/THIRD_PARTY_NOTICES.md`.

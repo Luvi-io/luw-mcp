@@ -76,12 +76,12 @@ Notes:
 
 The release workflow checks that the tag matches `package.json`, runs typecheck, tests and build, publishes to npm through Trusted Publishing (with provenance), builds `luw.mcpb` and attaches it to a GitHub release, and publishes `server.json` to the MCP Registry when the secret is set.
 
-## Luw Studio tools and Pascal
+## Luw Studio tools and the editor packages
 
-The `studio` toolset (hosted at `/studio`) runs Pascal's MCP scene tools on Luw Studio projects. Pascal's core and MCP are bundled as Luw Studio builds them, from `vendor/pascal-app-{core,mcp}-<version>-luw.tgz`, so the tools carry Studio's patches (LUW.md in the luwstudio2 repo). After Luw Studio merges Pascal or changes a core patch, rebuild them and release:
+The `studio` toolset (hosted at `/studio`) runs the open-source editor's MCP scene tools on Luw Studio projects. Its core and MCP are bundled as Luw Studio builds them, from `vendor/pascal-app-{core,mcp}-<version>-luw.tgz`, so the tools carry Studio's patches (LUW.md in the luwstudio2 repo). After Luw Studio merges the upstream editor or changes a core patch, rebuild them and release:
 
 ```bash
-node scripts/vendor-pascal.mjs ../luwstudio2   # builds and packs both packages into vendor/
+node scripts/vendor-editor.mjs ../luwstudio2   # builds and packs both packages into vendor/
 npm install && npm test
 ```
 

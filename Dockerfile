@@ -3,7 +3,7 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
-# Pascal's core and MCP as Luw Studio builds them (scripts/vendor-pascal.mjs).
+# The editor's core and MCP as Luw Studio builds them (scripts/vendor-editor.mjs).
 COPY vendor ./vendor
 RUN npm ci --no-audit --no-fund
 COPY tsconfig.json tsconfig.engine.json ./

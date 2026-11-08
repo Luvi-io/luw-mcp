@@ -20,6 +20,7 @@ import { builtinAgentOperations } from "@pascal-app/nodes/agent-operations";
 import { builtinAgentTools } from "@pascal-app/nodes/agent-tools";
 import type { ZodType } from "zod";
 import type { Extra } from "../context.js";
+import { studioIds } from "../luw-name.js";
 import { registerBathSpace } from "./bath-space/register.js";
 import type { SceneGraphJson } from "./projects.js";
 
@@ -176,7 +177,8 @@ export function runOnScene(
         readSession: () => bridge.agentSession.read(),
         keep: (keep) => bridge.agentSession.keep(keep),
       },
-      () => call(tool, args, extra),
+      // A scene's ids go out as luw:… (luw-name.ts); a tool reads them as the scene spells them.
+      () => call(tool, studioIds(args), extra),
     );
     await settle();
     const after = snapshot(bridge);

@@ -1,10 +1,10 @@
-// Rebuilds vendor/pascal-app-{core,mcp,nodes}-<version>-luw.tgz from a Luw Studio checkout: Pascal's core,
-// MCP and built-in kinds as Luw Studio runs them (Pascal's MIT packages with Luw's patches, listed in its
-// LUW.md), which the studio tools bundle. Run after Luw Studio merges Pascal or changes a patch, then
+// Rebuilds vendor/pascal-app-{core,mcp,nodes}-<version>-luw.tgz from a Luw Studio checkout: the editor's core,
+// MCP and built-in kinds as Luw Studio runs them (the upstream MIT packages with Luw's patches, listed in its
+// LUW.md), which the studio tools bundle. Run after Luw Studio merges the upstream editor or changes a patch, then
 // `npm install`. The studio tools take only the kinds' agent tools (the kitchen's), which need core
 // alone: the nodes tarball leaves out its peers (the editor, the viewer, React Three Fiber), which
 // would only be installed, never bundled.
-//   node scripts/vendor-pascal.mjs <path to the luwstudio2 checkout>
+//   node scripts/vendor-editor.mjs <path to the luwstudio2 checkout>
 import { execFileSync } from "node:child_process";
 import { cpSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
