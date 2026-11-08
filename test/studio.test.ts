@@ -146,7 +146,7 @@ describe("studio toolset", () => {
     expect(result.structuredContent).toMatchObject({ project: "7" });
     const saved = p.trainings.get(8)!;
     expect(saved.extras).toBeTruthy();
-    expect(scene(saved.extras).luwFormat).toBe("pascal-1");
+    expect(scene(saved.extras).luwFormat).toBe("luw-1");
     expect(ofType(saved.extras, "wall")).toHaveLength(1);
     expect(p.persona.title).toMatch(/^assistant-edit:\d+$/);
     expect(ofType(p.trainings.get(1009)!.extras, "wall")).toHaveLength(0); // undo goes back to the empty level
@@ -434,7 +434,7 @@ describe("studio toolset", () => {
     expect(created[0]!.json).toEqual({ name: "Garden", profession: "Studio" });
     expect(created[1]!.json.slot).toBe(8);
     expect(ofType(created[1]!.json.extras, "wall").length).toBeGreaterThan(0);
-    expect(scene(created[1]!.json.extras).luwFormat).toBe("pascal-1");
+    expect(scene(created[1]!.json.extras).luwFormat).toBe("luw-1");
   });
 
   it("won't replace a design with a template", async () => {

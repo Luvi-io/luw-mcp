@@ -20,8 +20,8 @@ const UNDO_SLOT = 1009;
 const SESSION_SLOT = 1011;
 const SESSION_IDLE_MS = 60 * 60 * 1000;
 /** What Studio writes into a scene it saved; a scene without it is a 0.9 Studio ("legacy") project. */
-export const SCENE_FORMAT = "pascal-1"; // Switch to "luw-1" once Studio writes it: Rails and every reader take both.
-/** The stamps a scene Studio saved carries: its new name and the old one. */
+export const SCENE_FORMAT = "luw-1";
+/** The stamps a scene Studio saved carries: luw-1, and pascal-1, its first name, on scenes saved before 2026-11-08. */
 const STUDIO_FORMATS: readonly unknown[] = ["luw-1", "pascal-1"];
 /**
  * Written to the persona's title after every edit. Studio never sets the title, so an open Studio tab
