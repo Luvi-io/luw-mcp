@@ -63,12 +63,17 @@ function progressReporter(extra: Extra): ToolContext["progress"] {
   };
 }
 
-export function createDeps(config: LuwConfig, fetchImpl: typeof fetch = globalThis.fetch.bind(globalThis)): Deps {
+export function createDeps(
+  config: LuwConfig,
+  fetchImpl: typeof fetch = globalThis.fetch.bind(globalThis),
+  authHeaders?: Record<string, string>,
+): Deps {
   const client = new LuwClient({
     apiKey: config.apiKey,
     baseUrl: config.baseUrl,
     fetch: fetchImpl,
     hosted: config.mode === "remote",
+    authHeaders,
     missingKeyHint:
       config.mode === "remote"
         ? 'send it as an "Authorization: Bearer <key>" header when connecting to this server.'

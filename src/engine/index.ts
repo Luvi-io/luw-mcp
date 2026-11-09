@@ -270,10 +270,12 @@ export async function runToolOnGraph(
 // the same inputs and descriptions, plus luw_get_result and luw_list_options, run as the hosted server
 // runs them: an image is an https:// URL or a data: URI, never a path on the host's disk.
 
-/** How runDesignTool reaches Luw.ai for its caller. */
+/** How runDesignTool reaches Luw.ai for its caller: an API key, or a signed-in app session's headers. */
 export interface DesignToolOptions {
   /** The caller's Luw.ai API key, sent as a Bearer token. */
-  apiKey: string;
+  apiKey?: string;
+  /** Without a key: the caller's Luw.ai app session headers (X-Token-Access, X-Token-Salt, X-Token-Authentication), sent as they came. */
+  authHeaders?: Record<string, string>;
   /** The Luw.ai API (default https://api.luw.ai/v2). */
   baseUrl?: string;
   fetch?: typeof fetch;
@@ -321,7 +323,7 @@ function designDeps(options: Partial<DesignToolOptions>): Deps {
       outputDir: undefined,
     },
   );
-  return createDeps(config, options.fetch);
+  return createDeps(config, options.fetch, options.apiKey ? undefined : options.authHeaders);
 }
 
 /**

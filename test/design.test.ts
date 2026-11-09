@@ -50,6 +50,23 @@ describe("design tools", () => {
     expect(gen!.json).toMatchObject({ model: "interior", image: "https://example.com/room.jpg", prompt: "japandi", luwmodel: "symphony-3" });
   });
 
+  it("runs for a signed-in app user with the session's headers instead of a key", async () => {
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/out.png" }));
+    const { runDesignTool } = await engine();
+    const session = { "X-Token-Access": "acc", "X-Token-Salt": "salt", "X-Token-Authentication": "auth" };
+    const result = await runDesignTool(
+      "luw_interior_design",
+      { image: "https://example.com/room.jpg" },
+      { authHeaders: session, baseUrl: API, fetch: luw.fetch, inlineImages: false },
+    );
+    expect(result.isError).toBeFalsy();
+    const [gen] = luw.generates();
+    expect(gen!.headers.get("authorization")).toBeNull();
+    expect(gen!.headers.get("x-token-access")).toBe("acc");
+    expect(gen!.headers.get("x-token-salt")).toBe("salt");
+    expect(gen!.headers.get("x-token-authentication")).toBe("auth");
+  });
+
   it("never reads a file on the host: a path is refused before any request", async () => {
     const luw = fakeLuw();
     const { runDesignTool } = await engine();

@@ -74,6 +74,9 @@ export interface LuwClientOptions {
   /** Hosted server: errors say "reconnect" rather than LUW_API_KEY, and never link to pricing
    *  (in-chat app stores don't allow selling credits). */
   hosted?: boolean;
+  /** Sent instead of the Bearer key when there is no key: a signed-in Luw.ai app session's headers
+   *  (X-Token-Access, X-Token-Salt, X-Token-Authentication), for a host acting for that user (luw-api). */
+  authHeaders?: Record<string, string>;
 }
 
 export class LuwClient {
@@ -84,7 +87,7 @@ export class LuwClient {
   }
 
   get hasApiKey(): boolean {
-    return this.opts.apiKey.length > 0;
+    return this.opts.apiKey.length > 0 || Object.keys(this.opts.authHeaders ?? {}).length > 0;
   }
 
   async request<T = Params>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
@@ -102,7 +105,7 @@ export class LuwClient {
       "User-Agent": `luw-mcp/${VERSION}`,
       ...extraHeaders,
     };
-    if (auth) headers.Authorization = `Bearer ${this.opts.apiKey}`;
+    if (auth) Object.assign(headers, this.opts.apiKey ? { Authorization: `Bearer ${this.opts.apiKey}` } : this.opts.authHeaders);
     let body: BodyInit | undefined;
     if (json !== undefined) {
       headers["Content-Type"] = "application/json";
