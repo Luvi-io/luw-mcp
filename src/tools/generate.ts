@@ -280,8 +280,10 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         ctx.files.resolve(a.image, { signal: ctx.signal }),
         referenceParams(ctx, a.reference_images),
       ]);
-      const hd = a.resolution === "4k" ? 4 : a.resolution === "2k" ? 2 : undefined;
-      return generate(ctx, "Magic Prompt AI", { model: "magicprompt", image, ...common(a), hd, ...refs }, a.variations);
+      // Magic Prompt's 4K switch is uhd=1 (longcake Generation.uhd?); it never read hd, so "4k" came back 2K.
+      // 2K is the backend default, so "2k" sends nothing.
+      const uhd = a.resolution === "4k" ? 1 : undefined;
+      return generate(ctx, "Magic Prompt AI", { model: "magicprompt", image, ...common(a), uhd, ...refs }, a.variations);
     }),
   );
 

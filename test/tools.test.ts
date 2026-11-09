@@ -216,6 +216,17 @@ describe("generation", () => {
     ]);
   });
 
+  it("asks Magic Prompt for 4K with uhd=1, the switch the backend reads", async () => {
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/x.png" }));
+    const { call } = await connect(luw.fetch);
+    await call("luw_edit_image", { image: "https://example.com/p.jpg", prompt: "night scene", resolution: "4k" });
+    await call("luw_edit_image", { image: "https://example.com/p.jpg", prompt: "night scene", resolution: "2k" });
+    expect(luw.generates().map((g) => g.json)).toEqual([
+      { model: "magicprompt", image: "https://example.com/p.jpg", prompt: "night scene", uhd: 1 },
+      { model: "magicprompt", image: "https://example.com/p.jpg", prompt: "night scene" },
+    ]);
+  });
+
   it("validates inputs before spending credits", async () => {
     const luw = fakeLuw();
     const { call } = await connect(luw.fetch);
