@@ -3,12 +3,15 @@
 // turns with it). The same Pascal tools, inputs, descriptions and guide as the MCP server's Studio
 // tools (src/studio), on a scene graph the caller passes in: nothing here reads or writes a project,
 // and importing it makes no network call. A tool reads Studio's item catalog when it places furniture.
+// It also holds Luw.ai's generation tools (designToolDefinitions, runDesignTool at the end), which a
+// host runs with its caller's Luw.ai key.
 //
 // Every type the entry exports is declared in this file, so its declarations (dist/engine.d.ts) stand
 // alone.
 
 import { z } from "zod";
-import { STUDIO_CATALOG_URL } from "../config.js";
+import { loadConfig, STUDIO_CATALOG_URL } from "../config.js";
+import { createDeps, type Deps, type Server } from "../context.js";
 import { luwNamed } from "../luw-name.js";
 import { flattenTuples } from "../schema-compat.js";
 import { loadCatalog as loadStudioCatalog, studioAssetViews as studioViews } from "../studio/catalog.js";
@@ -30,6 +33,8 @@ import {
   type PascalTool,
 } from "../studio/engine.js";
 import { parseScene as parseStored, SCENE_FORMAT as FORMAT, serializeScene as serialize } from "../studio/projects.js";
+import { registerCoreTools } from "../tools/core.js";
+import { registerGenerateTools } from "../tools/generate.js";
 import { VERSION } from "../version.js";
 
 /** A Luw Studio scene: the scene graph JSON, as Studio stores it without its `luwFormat` stamp. */
@@ -172,11 +177,15 @@ function offered(): PascalTool[] {
   return [...tools().values()].filter((tool) => !LEFT_OUT.has(tool.name));
 }
 
-function jsonSchema(tool: PascalTool): Record<string, unknown> {
+function schemaFor(fields: Record<string, z.ZodType>): Record<string, unknown> {
   // As the MCP SDK lists a tool (draft-07, the input side), then without tuples (schema-compat.ts).
-  const schema = z.toJSONSchema(z.object(toolFields(tool)), { target: "draft-7", io: "input" }) as Record<string, unknown>;
+  const schema = z.toJSONSchema(z.object(fields), { target: "draft-7", io: "input" }) as Record<string, unknown>;
   const { $schema: _schema, ...rest } = flattenTuples(schema) as Record<string, unknown>;
   return rest;
+}
+
+function jsonSchema(tool: PascalTool): Record<string, unknown> {
+  return schemaFor(toolFields(tool) as Record<string, z.ZodType>);
 }
 
 /**
@@ -253,4 +262,95 @@ export async function runToolOnGraph(
     return unchanged(refusal("This edit would empty the project, so it was not made. Delete things one by one, or clear the project in Luw Studio."), done.session);
   }
   return { result: answer, changed: true, graph: done.graph, session: done.session };
+}
+
+/* ------------------------------------------------------------------ design tools */
+// Luw.ai's generation tools without the MCP server, for a host that runs an agent on its own server with
+// the caller's Luw.ai key (luw-api's archiagent-design model). The MCP server's "generate" toolset with
+// the same inputs and descriptions, plus luw_get_result and luw_list_options, run as the hosted server
+// runs them: an image is an https:// URL or a data: URI, never a path on the host's disk.
+
+/** How runDesignTool reaches Luw.ai for its caller. */
+export interface DesignToolOptions {
+  /** The caller's Luw.ai API key, sent as a Bearer token. */
+  apiKey: string;
+  /** The Luw.ai API (default https://api.luw.ai/v2). */
+  baseUrl?: string;
+  fetch?: typeof fetch;
+  signal?: AbortSignal;
+  /** How long one call waits for its generations before answering with a processing_url (default 240). */
+  waitSeconds?: number;
+  /** Put finished pictures into the answer as base64 images, as the MCP server does (default true). */
+  inlineImages?: boolean;
+}
+
+/** The core tools the design toolset adds to the generate ones. */
+const DESIGN_EXTRAS = new Set(["luw_get_result", "luw_list_options"]);
+
+type RegisteredTool = {
+  config: { title?: string; description?: string; inputSchema?: Record<string, z.ZodType>; annotations?: { readOnlyHint?: boolean } };
+  callback: (args: unknown, extra: unknown) => Promise<unknown>;
+};
+
+/** The design tools as the MCP server would register them with these deps, caught instead of served. */
+function registerDesignTools(deps: Deps): Map<string, RegisteredTool> {
+  const caught = new Map<string, RegisteredTool>();
+  const generate = new Set<string>();
+  const catcher = (names: Set<string> | null) =>
+    ({
+      registerTool: (name: string, config: RegisteredTool["config"], callback: RegisteredTool["callback"]) => {
+        caught.set(name, { config, callback });
+        names?.add(name);
+      },
+    }) as unknown as Server;
+  registerGenerateTools(catcher(generate), deps);
+  registerCoreTools(catcher(null), deps);
+  return new Map([...caught].filter(([name]) => generate.has(name) || DESIGN_EXTRAS.has(name)));
+}
+
+function designDeps(options: Partial<DesignToolOptions>): Deps {
+  // No env: the host's own settings never reach a caller's call.
+  const config = loadConfig(
+    {},
+    {
+      apiKey: options.apiKey ?? "",
+      ...(options.baseUrl ? { baseUrl: options.baseUrl.replace(/\/+$/, "") } : {}),
+      waitTimeoutSeconds: Math.min(3600, Math.max(0, Math.round(options.waitSeconds ?? 240))),
+      inlineImages: options.inlineImages ?? true,
+      mode: "remote",
+      outputDir: undefined,
+    },
+  );
+  return createDeps(config, options.fetch);
+}
+
+/**
+ * The design tools as a model calls them: `{name, description, input_schema}` with the MCP server's
+ * descriptions and inputs. Listing them makes no network call.
+ */
+export function designToolDefinitions(): ToolDefinition[] {
+  return [...registerDesignTools(designDeps({}))].map(([name, tool]) => ({
+    name,
+    ...(tool.config.title ? { title: tool.config.title } : {}),
+    description: tool.config.description ?? name,
+    input_schema: schemaFor(tool.config.inputSchema ?? {}),
+    read_only: tool.config.annotations?.readOnlyHint === true,
+  }));
+}
+
+/**
+ * Runs one design tool for the caller whose key `options` carries, as the hosted MCP server runs it: the
+ * arguments checked against the tool's schema, the generation submitted and waited for, and the answer
+ * as the MCP server gives it (the outputs' URLs in the text and in structuredContent.outputs). A tool
+ * that isn't a design tool, bad arguments and every failure answer with `isError` and the reason.
+ */
+export async function runDesignTool(name: string, args: Record<string, unknown> | undefined, options: DesignToolOptions): Promise<ToolResult> {
+  const tool = registerDesignTools(designDeps(options)).get(name);
+  if (!tool) return refusal(`Unknown tool: ${name}. The design tools are listed with their inputs.`);
+  const parsed = await z.object(tool.config.inputSchema ?? {}).safeParseAsync(args ?? {});
+  if (!parsed.success) return refusal(invalidArguments(name, parsed.error));
+  const signal = options.signal ?? new AbortController().signal;
+  // What the tools read of the MCP request they run in: its signal (and no progress token).
+  const extra = { signal, requestId: 0, sendNotification: async () => {}, sendRequest: async () => ({}) };
+  return (await tool.callback(parsed.data, extra)) as ToolResult;
 }
