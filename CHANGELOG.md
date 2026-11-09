@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `luw_edit_image` with `resolution: "4k"` sends `uhd=1`, the 4K switch Luw.ai's Magic Prompt reads; it sent `hd=4`, which Magic Prompt ignores, so 4K came back 2K. 4K costs one more credit, as on luw.ai.
+
 ## 0.3.13
 
 - A scene's ids reach a model as `luw:` (`installedPlugins: ["luw:trees", …]`), as Luw.ai's share pages and API hand them out, from the MCP server and from `@luw-ai/mcp/engine` alike; what a model sends back with `luw:` reads as the scene's own.
