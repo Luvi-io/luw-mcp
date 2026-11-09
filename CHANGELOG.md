@@ -3,6 +3,7 @@
 ## Unreleased
 
 - `luw_edit_image` with `resolution: "4k"` sends `uhd=1`, the 4K switch Luw.ai's Magic Prompt reads; it sent `hd=4`, which Magic Prompt ignores, so 4K came back 2K. 4K costs one more credit, as on luw.ai.
+- `@luw-ai/mcp/engine` also holds Luw.ai's generation tools for a host that runs them on its own server with its caller's key: `designToolDefinitions()` lists the `generate` toolset with `luw_get_result` and `luw_list_options` (the MCP server's names, inputs and descriptions), and `runDesignTool(name, args, { apiKey })` runs one as the hosted server does, so an image is an https:// URL or a data: URI and never a file on the host. The MCP server's tools are unchanged.
 
 ## 0.3.13
 
