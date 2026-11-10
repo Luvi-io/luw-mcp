@@ -9,6 +9,8 @@ RUN npm ci --no-audit --no-fund
 COPY tsconfig.json tsconfig.engine.json ./
 COPY scripts ./scripts
 COPY src ./src
+# The build also stages what npm publishes (build/npm), README and LICENSE included.
+COPY README.md LICENSE ./
 RUN npm run build
 
 FROM node:22-alpine
