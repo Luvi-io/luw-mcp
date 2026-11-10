@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The scene tools follow Luw Studio's 2026-11-10 editor update: `duct_edit`, `pipe_grade`, `pipe_resize`, `pipe_offset` and `pipe_connect` change duct and pipe runs with their joints kept together, and the guide names them.
+
 ## 0.3.15
 
 - The Studio guide (`luw://studio/guide`, and the engine's for luw-api) keeps a finished design's services for when the user asks to finalize: ducts, pipes, registers, the HVAC unit, traps and the lineset as `apply_patch` creates on the level, with their fields; the Skeleton X-ray and streets are added in Studio. A concept sketch, never code-compliant.
