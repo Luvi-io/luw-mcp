@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.15
 
 - The Studio guide (`luw://studio/guide`, and the engine's for luw-api) keeps a finished design's services for when the user asks to finalize: ducts, pipes, registers, the HVAC unit, traps and the lineset as `apply_patch` creates on the level, with their fields; the Skeleton X-ray and streets are added in Studio. A concept sketch, never code-compliant.
 
