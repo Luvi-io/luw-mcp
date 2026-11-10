@@ -169,4 +169,21 @@ describe("engine entry", () => {
     expect(api).toContain("## Scene Creation Rules");
     expect(studioGuide()).toContain("luw_studio_list_projects");
   });
+
+  it("keeps a finished design's services for when the user asks to finalize, in both guides", async () => {
+    const { studioGuide, runOnScene, sceneTools, defaultScene } = await engine();
+    for (const guide of [studioGuide(), studioGuide({ forApi: true })]) {
+      expect(guide).toContain("only when the user asks to finalize");
+      for (const kind of ["duct-segment", "duct-terminal", "hvac-equipment", "pipe-segment", "pipe-trap", "lineset"]) expect(guide).toContain(kind);
+    }
+    // What the guide describes, apply_patch makes.
+    const scene = await defaultScene();
+    const level = (Object.values(scene.nodes) as { id: string; type: string }[]).find((node) => node.type === "level")!;
+    const patches = [
+      { op: "create", parentId: level.id, node: { type: "duct-segment", path: [[0, 2.5, 0], [4, 2.5, 0]], diameter: 8, system: "supply" } },
+      { op: "create", parentId: level.id, node: { type: "pipe-trap", position: [3, 0.3, 0] } },
+    ];
+    const run = await runOnScene(scene, sceneTools().get("apply_patch")!, { patches }, {}, async () => []);
+    expect(run.result.isError).toBeFalsy();
+  });
 });

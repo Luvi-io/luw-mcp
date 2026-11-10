@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The Studio guide (`luw://studio/guide`, and the engine's for luw-api) keeps a finished design's services for when the user asks to finalize: ducts, pipes, registers, the HVAC unit, traps and the lineset as `apply_patch` creates on the level, with their fields; the Skeleton X-ray and streets are added in Studio. A concept sketch, never code-compliant.
+
 ## 0.3.14
 
 - The package is Luvi Technologies' own (LICENSE): free to install and run with a Luw.ai account, not to copy, change or redistribute. The bundles are minified, and `dist/THIRD_PARTY_NOTICES.md` lists the bundled open-source software by license: each license's copyright notices, then its text once. The Claude Desktop extension carries the notices too.
