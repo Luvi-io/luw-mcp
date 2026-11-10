@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.14
 
 - The package is Luvi Technologies' own (LICENSE): free to install and run with a Luw.ai account, not to copy, change or redistribute. The bundles are minified, and `dist/THIRD_PARTY_NOTICES.md` lists the bundled open-source software by license: each license's copyright notices, then its text once. The Claude Desktop extension carries the notices too.
 - `@luw-ai/mcp/engine` exports the scene tools as `sceneTools` (was `pascalTools`).
