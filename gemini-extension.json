@@ -1,6 +1,6 @@
 {
   "name": "luw",
-  "version": "0.3.15",
+  "version": "0.3.16",
   "description": "Official Luw.ai extension: AI interior, exterior and landscape design, photoreal rendering, image editing, video and 3D.",
   "mcpServers": {
     "luw": {

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.16
 
 - The scene tools follow Luw Studio's 2026-11-10 editor update: `duct_edit`, `pipe_grade`, `pipe_resize`, `pipe_offset` and `pipe_connect` change duct and pipe runs with their joints kept together, and the guide names them.
 
