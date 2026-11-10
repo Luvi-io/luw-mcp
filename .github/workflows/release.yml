@@ -35,7 +35,7 @@ jobs:
           if npm view "$(node -p 'require("./package.json").name')@${GITHUB_REF_NAME#v}" version >/dev/null 2>&1; then
             echo "${GITHUB_REF_NAME} is already on npm; skipping publish."
           else
-            npm publish --access public
+            npm publish ./build/npm --access public
           fi
 
       - name: Build Claude Desktop extension

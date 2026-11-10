@@ -17,7 +17,6 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@luw-ai/mcp"><img alt="npm" src="https://img.shields.io/npm/v/@luw-ai/mcp?style=flat-square&color=6b46c1"></a>
   <a href="https://github.com/Luvi-io/luw-mcp/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Luvi-io/luw-mcp/ci.yml?style=flat-square&label=CI"></a>
-  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square"></a>
 </p>
 
 <p align="center">
@@ -401,4 +400,4 @@ node scripts/vendor-editor.mjs ../luwstudio2  # rebuild vendor/: the editor core
 - Issues: [GitHub Issues](https://github.com/Luvi-io/luw-mcp/issues)
 - Email: [support@luvi.io](mailto:support@luvi.io)
 
-MIT © [Luvi Technologies, Inc.](https://www.luvi.io). Bundled open-source components and their licenses: `dist/THIRD_PARTY_NOTICES.md`.
+© [Luvi Technologies, Inc.](https://www.luvi.io), all rights reserved. Free to install and run with your Luw.ai account; copying, changing or redistributing it is not allowed (see [LICENSE](LICENSE)). Bundled open-source components and their licenses: `dist/THIRD_PARTY_NOTICES.md`.

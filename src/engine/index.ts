@@ -123,7 +123,7 @@ export const SCENE_FORMAT: string = FORMAT;
 export const LEGACY_MESSAGE: string = LEGACY;
 
 /** Every scene tool the engine registered, Luw's left-out ones included (apiToolDefinitions leaves them out). */
-export const pascalTools: () => ReadonlyMap<string, EngineTool> = tools as unknown as () => ReadonlyMap<string, EngineTool>;
+export const sceneTools: () => ReadonlyMap<string, EngineTool> = tools as unknown as () => ReadonlyMap<string, EngineTool>;
 
 /** The starting scene for an empty project: a site, a building and one level. */
 export const defaultScene: () => Promise<SceneGraphJson> = startingScene;

@@ -8,8 +8,8 @@ sublicense or sell it or any part of it, or reverse engineer it except where
 the law allows that despite this term.
 
 It contains open-source components by others, used under their own licenses,
-which are listed in dist/THIRD_PARTY_NOTICES.md; those licenses govern those
-components.
+whose notices come with it in THIRD_PARTY_NOTICES.md; those licenses govern
+those components.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED. IN NO EVENT SHALL LUVI TECHNOLOGIES, INC. BE LIABLE FOR ANY CLAIM,

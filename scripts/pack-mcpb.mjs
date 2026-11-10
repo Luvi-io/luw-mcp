@@ -13,6 +13,8 @@ await mkdir(new URL("server/", staging), { recursive: true });
 await copyFile(new URL("dist/cli.js", root), new URL("server/index.mjs", staging));
 await copyFile(new URL("assets/icon.png", root), new URL("icon.png", staging));
 await copyFile(new URL("LICENSE", root), new URL("LICENSE", staging));
+// The bundle carries open-source code, so it carries those licenses' notices too.
+await copyFile(new URL("dist/THIRD_PARTY_NOTICES.md", root), new URL("THIRD_PARTY_NOTICES.md", staging));
 await writeFile(new URL("manifest.json", staging), JSON.stringify({ ...manifest, version: pkg.version }, null, 2));
 
 const out = new URL("build/luw.mcpb", root).pathname;
