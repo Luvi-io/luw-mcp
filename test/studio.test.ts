@@ -476,6 +476,10 @@ describe("studio toolset", () => {
     expect(created[1]!.json.slot).toBe(8);
     expect(ofType(created[1]!.json.extras, "wall").length).toBeGreaterThan(0);
     expect(scene(created[1]!.json.extras).luwFormat).toBe("luw-1");
+    // Pascal's template piles every opening on its wall's first corner; ours stand apart, inside the wall.
+    const along = (type: string) => ofType(created[1]!.json.extras, type).map((n) => (n.position as number[])[0]);
+    expect(along("door").sort()).toEqual([6, 6]);
+    expect(along("window").sort()).toEqual([3, 4, 4, 9]);
   });
 
   it("won't replace a design with a template", async () => {

@@ -37,6 +37,30 @@ function projectNumber(value: unknown): number {
   return id;
 }
 
+/**
+ * Pascal's starter templates leave every door and window at 0 along its wall: piled on the wall's
+ * first corner. An opening can't be centred there, so those are spread evenly, doors in the middle.
+ */
+function spreadOpenings(graph: SceneGraphJson): SceneGraphJson {
+  type Point = [number, number];
+  type Node = { type?: string; start?: Point; end?: Point; children?: string[]; position?: [number, number, number] };
+  type Opening = Node & { position: [number, number, number] };
+  const nodes = graph.nodes as Record<string, Node>;
+  for (const wall of Object.values(nodes)) {
+    if (wall.type !== "wall" || !wall.start || !wall.end) continue;
+    const piled = (wall.children ?? [])
+      .map((id) => nodes[id])
+      .filter((n): n is Opening => (n?.type === "door" || n?.type === "window") && n.position?.[0] === 0);
+    const windows = piled.filter((n) => n.type === "window");
+    const doors = piled.filter((n) => n.type === "door");
+    const half = Math.ceil(windows.length / 2);
+    const inOrder = [...windows.slice(0, half), ...doors, ...windows.slice(half)];
+    const length = Math.hypot(wall.end[0] - wall.start[0], wall.end[1] - wall.start[1]);
+    inOrder.forEach((n, i) => (n.position[0] = (length * (i + 1)) / (inOrder.length + 1)));
+  }
+  return graph;
+}
+
 function withNote(result: CallToolResult, note: string): CallToolResult {
   return { ...result, content: [...(result.content ?? []), { type: "text", text: note }] };
 }
@@ -67,6 +91,7 @@ async function runOnProject(tool: PascalTool, args: Record<string, unknown>, ctx
       );
     }
     const run = await runOnScene(graph, tool, input, extra, catalog, project.session, assetViews);
+    if (REPLACES_SCENE.has(tool.name) && !run.result.isError) spreadOpenings(run.graph);
     // Only a convenience: a session that can't be kept starts afresh next time, as Pascal's would.
     const keepSession = async () => {
       if (JSON.stringify(run.session) !== JSON.stringify(project.session))
@@ -146,7 +171,7 @@ export function registerStudioTools(server: Server, deps: Deps) {
         if (a.template) {
           const run = await runOnScene(start, pascalTools().get("create_from_template")!, { id: a.template }, extra, async () => []);
           if (run.result.isError) return luwNamed(run.result);
-          scene = serializeScene(run.graph);
+          scene = serializeScene(spreadOpenings(run.graph));
         }
         const id = await createProject(ctx, a.name.trim(), scene);
         return json({ project_id: id, name: a.name.trim(), template: a.template, studio_url: studioUrl(id) });
