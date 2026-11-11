@@ -24,7 +24,7 @@
       "interface": {
         "displayName": "Luw.ai Studio",
         "shortDescription": "Design buildings in 3D by chat",
-        "longDescription": "Luw.ai Studio is a 3D building design studio in the browser. With this app, ChatGPT builds and changes your Studio projects for you: it lays out rooms, walls, doors and windows, adds stairs and roofs, fits kitchens and bathrooms, furnishes rooms from the catalog and sets finishes. Each edit is saved to the project, and Studio, open in another tab, shows it within seconds. The last edit can be undone at any time.\n\nStart from a starter house or an empty site, describe what you want room by room, or refine a project you began in Studio. ChatGPT reads the scene before it changes anything and checks its work afterwards.\n\nRequires a Luw.ai account. Editing projects uses no credits; renders and other generations use credits from your Luw.ai account.",
+        "longDescription": "Luw.ai Studio is a 3D building design studio in the browser. With this app, ChatGPT builds and changes your Studio projects for you: it lays out rooms, walls, doors and windows, adds stairs and roofs, fits kitchens and bathrooms, furnishes rooms from the catalog and sets finishes. Each edit is saved to the project, and Studio, open in another tab, shows it within seconds. The last edit can be undone at any time.\n\nStart from a starter house or an empty site, describe what you want room by room, or refine a project you began in Studio. ChatGPT reads the scene before it changes anything and checks its work afterwards.\n\nRequires a Luw.ai account; renders and other image generations use credits from it.",
         "developerName": "Luvi Technologies, Inc.",
         "category": "Creativity",
         "capabilities": [
