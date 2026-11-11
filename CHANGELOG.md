@@ -3,6 +3,7 @@
 ## Unreleased
 
 - `run_batch` runs only the scene tools Luw Studio offers on their own: its description lists them and its `calls[].tool` is an enum of them, so `add_object`, which the Studio tools leave out, is refused before it runs. `create_from_template` is described in Luw Studio's words (a starter template for an empty project) instead of Pascal's bridge and project store. ChatGPT's directory scan of the Studio app flagged both.
+- The Studio tools offer no geometry-script inputs, which this server refuses (`scripts_unavailable`): `add_door`, `add_window` and `add_column` lose `code`, `language` and `params`, and `add_door` and `add_window` their `nodeId`, which only rebuilt a script (ChatGPT's scan read it as a non-destructive tool replacing a door). `add_column`'s `nodeId` still resizes a column by its fields. Their descriptions, and `furnish_room`'s, no longer send the assistant to scripts or to tools left out here (`add_object`, `get_source`, `view_scene`).
 - ChatGPT app package for Luw.ai Studio in `plugins/chatgpt-studio/` (hosted `/studio`), uploaded to OpenAI's plugin dashboard as a draft.
 
 ## 0.3.16

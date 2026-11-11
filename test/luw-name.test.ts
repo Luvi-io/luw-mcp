@@ -8,7 +8,6 @@ const IDENTIFIERS = ["pascalNodeId"];
 const named = (text: string) => IDENTIFIERS.reduce((rest, id) => rest.replaceAll(id, ""), text).match(/.{0,60}pascal.{0,60}/gi) ?? [];
 
 const ALL = { LUW_TOOLSETS: "all", LUW_STUDIO_CATALOG_URL: "" };
-const NO_CATALOG = { catalogUrl: "" };
 
 /** A Studio project with nothing saved yet, as Rails serves it. */
 const emptyProject = () =>
@@ -45,19 +44,25 @@ describe("Luw Studio's name", () => {
   it("is what a vendored tool's refusal says, and where its answer points", async () => {
     const { client, call } = await connect(emptyProject().fetch, {}, ALL);
     await client.listTools(); // the client checks a result against the output schema it listed
+    // add_door offers no nodeId here (it only rebuilds a script), so this is the refusal for a door with no wall.
     const refused = await call("add_door", { project_id: 7, nodeId: "door_1" });
     expect(refused.isError).toBe(true);
-    expect(textOf(refused)).toContain("This Luw Studio server cannot run geometry scripts.");
+    expect(textOf(refused)).toMatch(/wall/i);
     const unparsed = await call("validate_design", { project_id: 7, design: "{}" });
     expect(unparsed.isError, textOf(unparsed)).toBeFalsy();
     expect(unparsed.structuredContent).toMatchObject({ valid: false, schemaUri: "luw://studio/design-schema" });
     expect(named(JSON.stringify([refused, unparsed]))).toEqual([]);
 
-    const { defaultScene, runToolOnGraph } = await import("../src/engine/index.js");
-    const run = await runToolOnGraph(await defaultScene(), null, "add_door", { nodeId: "door_1" }, NO_CATALOG);
-    expect(run.result.isError).toBe(true);
-    expect(run.result.content[0]!.text).toContain("This Luw Studio server cannot run geometry scripts.");
-    expect(named(JSON.stringify(run.result))).toEqual([]);
+    // Pascal's own tool, past Luw's schema, still refuses a script rebuild, and says so in Luw Studio's name.
+    const { defaultScene, pascalTools, runOnScene } = await import("../src/studio/engine.js");
+    const { luwNamed } = await import("../src/luw-name.js");
+    const signal = new AbortController().signal;
+    const extra = { signal, mcpReq: { signal }, requestId: 0, sendNotification: async () => {}, sendRequest: async () => ({}) };
+    const run = await runOnScene(await defaultScene(), pascalTools().get("add_door")!, { nodeId: "door_1" }, extra as never, async () => []);
+    const script = luwNamed(run.result);
+    expect(script.isError).toBe(true);
+    expect(JSON.stringify(script.content)).toContain("This Luw Studio server cannot run geometry scripts.");
+    expect(named(JSON.stringify(script))).toEqual([]);
   });
 
   it("hands a scene's ids out as luw:, and reads them back as the scene spells them", async () => {

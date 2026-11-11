@@ -111,6 +111,25 @@ describe("studio toolset", () => {
     expect(template).not.toMatch(/bridge|SceneStore|SceneMeta|save: true/);
   });
 
+  it("offers no geometry-script inputs, which this server refuses, and sends no tool to scripts", async () => {
+    const { client } = await connect(fakeLuw().fetch, {}, STUDIO);
+    const tools = (await client.listTools()).tools;
+    for (const tool of tools) {
+      for (const key of ["code", "language", "params"]) expect(tool.inputSchema.properties, `${tool.name}.${key}`).not.toHaveProperty(key);
+    }
+    for (const name of ["add_door", "add_window"]) {
+      const tool = tools.find((t) => t.name === name)!;
+      expect(tool.inputSchema.properties, name).not.toHaveProperty("nodeId");
+      expect(tool.inputSchema.properties, name).toHaveProperty("wallId");
+      expect(tool.description, name).toMatch(/Add a (door|window) to an existing straight wall/);
+    }
+    const column = tools.find((t) => t.name === "add_column")!;
+    expect(JSON.stringify(column.inputSchema.properties!.nodeId)).not.toMatch(/code|get_source/);
+    for (const name of ["add_door", "add_window", "add_column", "furnish_room"]) {
+      expect(tools.find((t) => t.name === name)!.description, name).not.toMatch(/add_object|get_source|view_scene|script|run_batch/);
+    }
+  });
+
   it("answers a tool Pascal retired with its replacement, and no tool names Pascal as the library", async () => {
     const { client, call } = await connect(fakeLuw().fetch, {}, STUDIO);
     const tools = (await client.listTools()).tools;

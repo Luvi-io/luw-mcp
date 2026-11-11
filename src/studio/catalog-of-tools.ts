@@ -91,6 +91,32 @@ const OWN_INPUTS: Record<string, Record<string, ZodType>> = {
   },
 };
 
+/**
+ * Inputs for geometry scripts, which this host can't run (it answers scripts_unavailable): left out of
+ * every tool that takes `code`, so no tool offers what it refuses. add_door and add_window's nodeId only
+ * rebuilds a script, so it goes too; add_column's also resizes a column by its fields, so it stays,
+ * described without scripts.
+ */
+const SCRIPT_INPUTS = ["code", "language", "params"];
+const SCRIPT_ONLY_REBUILD: ReadonlySet<string> = new Set(["add_door", "add_window"]);
+const OWN_FIELD_DESCRIPTIONS: Record<string, Record<string, string>> = {
+  add_column: { nodeId: "Change this column instead of adding one: the size fields you pass replace its current ones." },
+};
+
+/**
+ * Sentences that send the assistant to scripts or to tools Luw leaves out (add_object, get_source,
+ * view_scene), dropped from these tools' descriptions; Pascal's wording is otherwise kept.
+ */
+const SCRIPT_SENTENCE_TOOLS: ReadonlySet<string> = new Set(["add_door", "add_window", "add_column", "furnish_room"]);
+const SCRIPT_SENTENCE = /\b(add_object|get_source|view_scene|run_batch)\b|\bscript|^Params named/;
+function withoutScripts(description: string): string {
+  return description
+    .replace(/; what (?:they|it) cannot express \([^)]*\) is written as a script in code, never left as not possible\./g, ".")
+    .split(/(?<=\.)\s+(?=[A-Z])/)
+    .filter((sentence) => !SCRIPT_SENTENCE.test(sentence))
+    .join(" ");
+}
+
 /** What refuses an edit to a scene Studio 0.9 saved, until Studio upgrades it. */
 export const LEGACY =
   "This project was last saved by the previous Luw Studio. Open it once at studio.luw.ai (that upgrades it and keeps a backup of the old version); then it can be edited here. Reading it works now.";
@@ -108,11 +134,18 @@ function pascalShape(schema: PascalToolConfig["inputSchema"]): Record<string, Zo
 
 /** A tool's own inputs as Luw offers them: without the store-only ones, with the host's, worded for Luw Studio. */
 export function toolFields(tool: PascalTool): Record<string, ZodType> {
+  const shape = pascalShape(tool.config.inputSchema);
   const omit = new Set(STORE_INPUTS[tool.name] ?? []);
+  if ("code" in shape) for (const key of SCRIPT_INPUTS) omit.add(key);
+  if (SCRIPT_ONLY_REBUILD.has(tool.name)) omit.add("nodeId");
+  const worded = OWN_FIELD_DESCRIPTIONS[tool.name] ?? {};
   const own = Object.fromEntries(
-    Object.entries(pascalShape(tool.config.inputSchema))
+    Object.entries(shape)
       .filter(([key]) => !omit.has(key))
-      .map(([key, field]) => [key, field.description ? field.describe(luwName(field.description)) : field]),
+      .map(([key, field]) => {
+        const description = worded[key] ?? field.description;
+        return [key, description ? field.describe(luwName(description)) : field];
+      }),
   );
   return { ...own, ...OWN_INPUTS[tool.name], ...HOST_INPUTS[tool.name]?.input };
 }
@@ -134,7 +167,8 @@ export function inputShape(tool: PascalTool): Record<string, ZodType> {
 export function toolDescription(tool: PascalTool): string | undefined {
   if (OWN_DESCRIPTIONS[tool.name]) return OWN_DESCRIPTIONS[tool.name];
   const added = HOST_INPUTS[tool.name]?.description;
-  return luwNamed(added ? `${tool.config.description ?? ""} ${added}`.trim() : tool.config.description);
+  const pascal = SCRIPT_SENTENCE_TOOLS.has(tool.name) && tool.config.description ? withoutScripts(tool.config.description) : tool.config.description;
+  return luwNamed(added ? `${pascal ?? ""} ${added}`.trim() : pascal);
 }
 
 /**
