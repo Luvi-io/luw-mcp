@@ -89,6 +89,28 @@ describe("studio toolset", () => {
     expect(tools.find((t) => t.name === "create_from_template")?.inputSchema.properties).not.toHaveProperty("save");
   });
 
+  it("offers run_batch only for tools it offers on their own, and describes templates in Luw's words", async () => {
+    const { client, call } = await connect(fakeLuw().fetch, {}, STUDIO);
+    const tools = (await client.listTools()).tools;
+    const names = new Set(tools.map((t) => t.name));
+    const batch = tools.find((t) => t.name === "run_batch")!;
+    expect(batch.description).not.toMatch(/add_object/);
+    const calls = batch.inputSchema.properties!.calls as { items: { properties: { tool: { enum: string[] } } } };
+    const batchable = calls.items.properties.tool.enum;
+    expect(batchable).not.toContain("add_object");
+    expect(batchable).toContain("add_wall");
+    for (const name of batchable) {
+      expect(names.has(name), name).toBe(true);
+      expect(batch.description).toContain(name);
+    }
+    const refused = await call("run_batch", { project_id: 7, calls: [{ tool: "add_object", input: {} }] });
+    expect(refused.isError).toBe(true);
+
+    const template = tools.find((t) => t.name === "create_from_template")!.description!;
+    expect(template).toMatch(/list_templates/);
+    expect(template).not.toMatch(/bridge|SceneStore|SceneMeta|save: true/);
+  });
+
   it("answers a tool Pascal retired with its replacement, and no tool names Pascal as the library", async () => {
     const { client, call } = await connect(fakeLuw().fetch, {}, STUDIO);
     const tools = (await client.listTools()).tools;

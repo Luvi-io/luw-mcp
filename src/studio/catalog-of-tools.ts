@@ -1,4 +1,5 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { BATCHABLE_TOOLS } from "@pascal-app/core/agent-tools";
 import { z, type ZodType } from "zod";
 import { luwName, luwNamed } from "../luw-name.js";
 import type { PascalTool, PascalToolConfig } from "./engine.js";
@@ -59,6 +60,37 @@ export const HOST_INPUTS: Record<string, { input: Record<string, ZodType>; descr
 /** Inputs that only mean something with Pascal's own project store. */
 export const STORE_INPUTS: Record<string, string[]> = { create_from_template: ["save", "projectId", "name"] };
 
+/** The tools run_batch runs here: Pascal's batchable tools, less those Luw leaves out (add_object). */
+export const BATCH_TOOLS = BATCHABLE_TOOLS.filter((name) => !LEFT_OUT.has(name)) as [string, ...string[]];
+
+/**
+ * Descriptions Luw writes itself, where Pascal's names what this host doesn't offer: run_batch's lists
+ * add_object, and create_from_template's speaks of Pascal's bridge and project store. ChatGPT's
+ * directory scan flags both (an operation run that isn't offered on its own; an unclear description).
+ */
+const OWN_DESCRIPTIONS: Record<string, string> = {
+  create_from_template:
+    "Replaces the scene of an empty Luw Studio project with a starter template (ids from list_templates), with fresh ids. Only for a project with nothing built in it; for a new design, luw_studio_create_project takes a template too.",
+  run_batch:
+    "Runs several scene tools in one call, in order, each on the scene the calls before it left. The batch is one undo step and the result reports each call. For repeated or known-in-advance work; every tool it runs is also offered on its own, with the same input. A call can't use an id another call of the same batch creates: the report gives created ids for later calls. onRefusal stop (default): a refused call (an invalid input or a refused edit) stops the batch and nothing is applied; skip: the other calls are applied and each refusal is reported. " +
+    `Tools: ${BATCH_TOOLS.join(", ")}.`,
+};
+
+/** Inputs Luw words itself: run_batch names its tools in the schema, so only those can be called. */
+const OWN_INPUTS: Record<string, Record<string, ZodType>> = {
+  run_batch: {
+    calls: z
+      .array(
+        z.object({
+          tool: z.enum(BATCH_TOOLS).describe("The scene tool to run."),
+          input: z.record(z.string(), z.unknown()).optional().describe("That tool's input, as when calling it on its own."),
+        }),
+      )
+      .min(1)
+      .max(64),
+  },
+};
+
 /** What refuses an edit to a scene Studio 0.9 saved, until Studio upgrades it. */
 export const LEGACY =
   "This project was last saved by the previous Luw Studio. Open it once at studio.luw.ai (that upgrades it and keeps a backup of the old version); then it can be edited here. Reading it works now.";
@@ -82,7 +114,7 @@ export function toolFields(tool: PascalTool): Record<string, ZodType> {
       .filter(([key]) => !omit.has(key))
       .map(([key, field]) => [key, field.description ? field.describe(luwName(field.description)) : field]),
   );
-  return { ...own, ...HOST_INPUTS[tool.name]?.input };
+  return { ...own, ...OWN_INPUTS[tool.name], ...HOST_INPUTS[tool.name]?.input };
 }
 
 /** The MCP server's inputs for a tool: its fields after the project it works on. */
@@ -100,6 +132,7 @@ export function inputShape(tool: PascalTool): Record<string, ZodType> {
 
 /** A tool's description as Luw offers it: worded for Luw Studio, with what the host's inputs add. */
 export function toolDescription(tool: PascalTool): string | undefined {
+  if (OWN_DESCRIPTIONS[tool.name]) return OWN_DESCRIPTIONS[tool.name];
   const added = HOST_INPUTS[tool.name]?.description;
   return luwNamed(added ? `${tool.config.description ?? ""} ${added}`.trim() : tool.config.description);
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `run_batch` runs only the scene tools Luw Studio offers on their own: its description lists them and its `calls[].tool` is an enum of them, so `add_object`, which the Studio tools leave out, is refused before it runs. `create_from_template` is described in Luw Studio's words (a starter template for an empty project) instead of Pascal's bridge and project store. ChatGPT's directory scan of the Studio app flagged both.
+- ChatGPT app package for Luw.ai Studio in `plugins/chatgpt-studio/` (hosted `/studio`), uploaded to OpenAI's plugin dashboard as a draft.
+
 ## 0.3.16
 
 - The scene tools follow Luw Studio's 2026-11-10 editor update: `duct_edit`, `pipe_grade`, `pipe_resize`, `pipe_offset` and `pipe_connect` change duct and pipe runs with their joints kept together, and the guide names them.
