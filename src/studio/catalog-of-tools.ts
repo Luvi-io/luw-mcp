@@ -76,6 +76,15 @@ const OWN_DESCRIPTIONS: Record<string, string> = {
     `Tools: ${BATCH_TOOLS.join(", ")}.`,
 };
 
+/**
+ * What Luw adds to a description of Pascal's. place_items takes a turn without saying which way 0 faces:
+ * an assistant furnishing a bedroom guessed, and the bed stood with its foot to the wall.
+ */
+const OWN_NOTES: Record<string, string> = {
+  place_items:
+    "At rotation 0 a floor item's front faces +z and its back (a bed's headboard, the back of a sofa, wardrobe or cabinet) is toward -z; 90 turns the front to +x, 180 to -z, -90 to -x. A piece against a wall has its back to that wall and its front to the room: place_in_room works out that spot and turn by itself.",
+};
+
 /** Inputs Luw words itself: run_batch names its tools in the schema, so only those can be called. */
 const OWN_INPUTS: Record<string, Record<string, ZodType>> = {
   run_batch: {
@@ -166,7 +175,7 @@ export function inputShape(tool: PascalTool): Record<string, ZodType> {
 /** A tool's description as Luw offers it: worded for Luw Studio, with what the host's inputs add. */
 export function toolDescription(tool: PascalTool): string | undefined {
   if (OWN_DESCRIPTIONS[tool.name]) return OWN_DESCRIPTIONS[tool.name];
-  const added = HOST_INPUTS[tool.name]?.description;
+  const added = [HOST_INPUTS[tool.name]?.description, OWN_NOTES[tool.name]].filter(Boolean).join(" ");
   const pascal = SCRIPT_SENTENCE_TOOLS.has(tool.name) && tool.config.description ? withoutScripts(tool.config.description) : tool.config.description;
   return luwNamed(added ? `${pascal ?? ""} ${added}`.trim() : pascal);
 }

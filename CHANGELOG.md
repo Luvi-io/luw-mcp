@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `place_items` says which way a turn faces (at rotation 0 a floor item's front faces +z, its back -z) and points to `place_in_room` for a piece against a wall: an assistant furnishing a bedroom had to guess, and a bed stood with its foot to the wall.
+- The Luw.ai Studio ChatGPT app's review test asks for a 4 by 5 m bedroom (was 3 by 4).
+
 ## 0.3.17
 
 - A project started from a template (`luw_studio_create_project`, `create_from_template`) has its doors and windows spread along their walls, doors in the middle. The editor's starter templates leave every opening at 0 along its wall, so the garden house's garden door and two windows stood piled on one corner.

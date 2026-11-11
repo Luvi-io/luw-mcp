@@ -42,7 +42,7 @@
         "termsOfServiceURL": "https://app.luw.ai/docs/terms",
         "defaultPrompt": [
           "List my Luw.ai Studio projects.",
-          "Create a Luw.ai Studio project from a starter house and add a 3 by 4 m bedroom with a window.",
+          "Create a Luw.ai Studio project from a starter house and add a 4 by 5 m bedroom with a window.",
           "Furnish the living room in my Luw.ai Studio project in a Scandinavian style."
         ],
         "composerIcon": "./assets/logo.png",
@@ -65,9 +65,9 @@
             },
             {
               "description": "Add a room with a window",
-              "prompt": "In my Luw.ai Studio project Review House, add a 3 by 4 metre bedroom on the ground floor with a window.",
+              "prompt": "In my Luw.ai Studio project Review House, add a 4 by 5 metre bedroom on the ground floor with a window.",
               "tools_triggered": "create_room, add_window",
-              "expected_behavior": "ChatGPT confirms a 3 x 4 m bedroom with one window; a Studio tab with Review House open shows the room within seconds."
+              "expected_behavior": "ChatGPT confirms a 4 x 5 m bedroom with one window; a Studio tab with Review House open shows the room within seconds."
             },
             {
               "description": "Furnish a room",

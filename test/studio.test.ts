@@ -109,6 +109,9 @@ describe("studio toolset", () => {
     const template = tools.find((t) => t.name === "create_from_template")!.description!;
     expect(template).toMatch(/list_templates/);
     expect(template).not.toMatch(/bridge|SceneStore|SceneMeta|save: true/);
+
+    // place_items says which way a turn faces, so a bed's headboard is not left to a guess.
+    expect(tools.find((t) => t.name === "place_items")!.description).toMatch(/rotation 0 .*front faces \+z.*place_in_room/);
   });
 
   it("offers no geometry-script inputs, which this server refuses, and sends no tool to scripts", async () => {
