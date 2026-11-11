@@ -4,6 +4,7 @@
 
 - `place_items` says which way a turn faces (at rotation 0 a floor item's front faces +z, its back -z) and points to `place_in_room` for a piece against a wall: an assistant furnishing a bedroom had to guess, and a bed stood with its foot to the wall.
 - The Luw.ai Studio ChatGPT app's review test asks for a 4 by 5 m bedroom (was 3 by 4).
+- `place_in_room` and `furnish_room` keep a window clear like a door, of the pieces that stand more than 0.3 m above its sill (a wardrobe never stands in front of a window, a bed still stands under one), and a bedside table goes beside the bed already in the room, on a free side of it (the result names the bed in `beside`). From Luw Studio's core (luwstudio2 `place-in-room.ts`).
 
 ## 0.3.17
 
