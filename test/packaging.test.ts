@@ -7,9 +7,10 @@ const read = async (path: string) => JSON.parse(await readFile(new URL(`../${pat
 
 describe("release metadata", () => {
   it("keeps package.json, server.json, manifest.json and plugin versions in sync", async () => {
-    const [pkg, server, manifest, gemini, claudePlugin] = await Promise.all([
+    const [pkg, server, studio, manifest, gemini, claudePlugin] = await Promise.all([
       read("package.json"),
       read("server.json"),
+      read("server.studio.json"),
       read("manifest.json"),
       read("gemini-extension.json"),
       read("plugins/luw/.claude-plugin/plugin.json"),
@@ -23,6 +24,9 @@ describe("release metadata", () => {
     expect(claudePlugin.version).toBe(pkg.version);
     expect(VERSION).toBe(pkg.version);
     expect(server.description.length).toBeLessThanOrEqual(100);
+    // The Studio endpoint's own registry entry (ai.luw/studio)
+    expect(studio.version).toBe(pkg.version);
+    expect(studio.description.length).toBeLessThanOrEqual(100);
   });
 
   it("exports the engine entry the build writes, and keeps the CLI as the bin", async () => {

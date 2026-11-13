@@ -70,7 +70,7 @@ Notes:
 
 ## Releasing
 
-1. Bump `version` in `package.json`, `server.json` (both `version` fields), `manifest.json`, `gemini-extension.json`, `plugins/luw/.claude-plugin/plugin.json` and `src/version.ts`. `npm test` fails if they disagree. Claude Code users get the plugin update only when its `version` changes.
+1. Bump `version` in `package.json`, `server.json` (both `version` fields), `server.studio.json` (the registry entry of the hosted `/studio` endpoint, `ai.luw/studio`), `manifest.json`, `gemini-extension.json`, `plugins/luw/.claude-plugin/plugin.json` and `src/version.ts`. `npm test` fails if they disagree. Claude Code users get the plugin update only when its `version` changes.
 2. Update `CHANGELOG.md`.
 3. `git tag v0.2.0 && git push --tags`
 

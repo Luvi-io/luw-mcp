@@ -55,3 +55,5 @@ jobs:
           curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
           ./mcp-publisher login dns --domain luw.ai --private-key "$MCP_REGISTRY_KEY"
           ./mcp-publisher publish
+          # The hosted /studio endpoint has its own entry (ai.luw/studio)
+          ./mcp-publisher publish server.studio.json

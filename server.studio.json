@@ -1,0 +1,33 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "ai.luw/studio",
+  "title": "Luw Studio",
+  "description": "Design buildings in 3D by chat: rooms, walls, doors, windows, stairs, roofs and furniture.",
+  "websiteUrl": "https://studio.luw.ai",
+  "icons": [
+    {
+      "src": "https://luvicdn.net/img/luwai-10db78ea2bd139927f8b4f6c2ad1620c/lw-favicon.png?w=256&fm=png",
+      "mimeType": "image/png",
+      "sizes": ["256x256"]
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/Luvi-io/luw-mcp",
+    "source": "github"
+  },
+  "version": "0.3.17",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.luw.ai/studio",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Optional: Bearer followed by a Luw.ai API key. Clients with MCP OAuth sign in to Luw.ai instead.",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+name: Registry (Luw Studio)
+
+# Publishes server.studio.json (ai.luw/studio, the hosted /studio endpoint) to the MCP Registry.
+# Run by hand from the Actions tab; the release workflow publishes it too, after server.json.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      MCP_REGISTRY_KEY: ${{ secrets.MCP_REGISTRY_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish to the MCP Registry
+        run: |
+          test -n "$MCP_REGISTRY_KEY" || { echo "MCP_REGISTRY_PRIVATE_KEY is not set"; exit 1; }
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher login dns --domain luw.ai --private-key "$MCP_REGISTRY_KEY"
+          ./mcp-publisher publish server.studio.json
