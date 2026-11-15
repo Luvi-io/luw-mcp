@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.3.18
+
+- A job Luw.ai accepted is never reported as failed because one poll hit a network error or a 5xx: it comes back as still running, with its `processing_url` for `luw_get_result`. A 5xx on results no longer says the API key may be invalid.
+- `luw_upscale_image` offers 2x, 3x or 4x; 8 is accepted and sent as 4x (it used to come back 2x).
+- `luw_generate_pattern` asks for the small tile only at size 512 and describes the real sizes (Aria 1024/2048, Symphony 512/1024); 768 and 1024 are no longer refused.
+- `seed` is offered only on `luw_generate_image` (text-to-image without a guide image), the one place Luw.ai uses it. Clients that still send it to other tools get no error.
+- `luw_image_to_3d`: reflections work on both engines (paid accounts); Symphony adds the high-detail texture pack by default, `texture: 0` turns it off.
+- `luw_archigpt` drops the trailing `[generate…withluwai="…"]` tag from the reply and returns its prompt as `image_prompt`; `persona_id` no longer claims to remember the conversation.
+- Arguments Luw.ai ignores are gone: `engine` on `luw_generate_image` and `luw_render`, `enhance_prompt` on video and pattern, `format` where the result is always PNG or SVG. Descriptions say what `precision`, `enhance_prompt`, `persona_id`, 3:2 / 2:3 and 4K really do; `luw_edit_image` lists only aria and symphony.
+- Image inputs are described as public links or data: URIs (file paths only on the local server); temporary uploads are "not added to your library"; Node.js 20+; the license fields say "SEE LICENSE IN LICENSE"; README lists `find_by_type`, the ~2 MB package and the real `LUW_TOOLSETS` default in `--help`.
 - `place_items` says which way a turn faces (at rotation 0 a floor item's front faces +z, its back -z) and points to `place_in_room` for a piece against a wall: an assistant furnishing a bedroom had to guess, and a bed stood with its foot to the wall.
 - The Luw.ai Studio ChatGPT app's review test asks for a 4 by 5 m bedroom (was 3 by 4).
 - `place_in_room` and `furnish_room` keep a window clear like a door, of the pieces that stand more than 0.3 m above its sill (a wardrobe never stands in front of a window, a bed still stands under one), and a bedside table goes beside the bed already in the room, on a free side of it (the result names the bed in `beside`). From Luw Studio's core (luwstudio2 `place-in-room.ts`).
