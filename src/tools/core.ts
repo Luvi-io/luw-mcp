@@ -65,7 +65,7 @@ export function registerCoreTools(server: Server, deps: Deps) {
         persistent: z
           .boolean()
           .optional()
-          .describe("Keep the file in your Luw.ai storage permanently. Default: temporary, auto-deleted after 12 hours."),
+          .describe("Keep the file in your Luw.ai storage permanently. Default: temporary (not added to your library)."),
         persona_id: z.number().int().positive().optional().describe("Persona to store a persistent file under (default: your first persona)."),
       },
       annotations: { title: "Upload file", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
@@ -94,7 +94,7 @@ export function registerCoreTools(server: Server, deps: Deps) {
       } else {
         url = await ctx.files.resolve(a.source, options);
       }
-      const note = a.persistent ? "" : " (temporary — deleted after 12 hours)";
+      const note = a.persistent ? "" : " (temporary, not added to your library)";
       return text(`Uploaded${note}: ${url}`, { url, temporary: !a.persistent });
     }),
   );

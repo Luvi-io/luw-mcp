@@ -129,7 +129,7 @@ The hosted server is stateless and stores nothing; your key goes straight to the
 
 ### Local: work with files on your computer
 
-The local server runs on your machine with `npx`, so it can read paths like `~/Desktop/room.jpg`. It needs [Node.js](https://nodejs.org) 18+ and an API key from [app.luw.ai/dashboard/api](https://app.luw.ai/dashboard/api).
+The local server runs on your machine with `npx`, so it can read paths like `~/Desktop/room.jpg`. It needs [Node.js](https://nodejs.org) 20+ and an API key from [app.luw.ai/dashboard/api](https://app.luw.ai/dashboard/api).
 
 <details>
 <summary><b>Claude Code</b></summary>
@@ -291,10 +291,10 @@ Built-in prompts show up as slash commands or prompt templates in your client: `
 | `luw_exterior_design` | Redesign a facade or building exterior | 1 |
 | `luw_sketch_to_render` | Sketch or drawing to photoreal render | 1 |
 | `luw_render` | 3D, CAD or clay view to photoreal render | 1 |
-| `luw_edit_image` | Edit any image with a sentence (Magic Prompt); 2K/4K | 1 |
+| `luw_edit_image` | Edit any image with a sentence (Magic Prompt); 2K/4K | 1 (2 at 4K) |
 | `luw_magic_wand` | Masked edit: replace, remove, or apply a material | 1 |
 | `luw_landscape_design` | Gardens and outdoor areas, matched to climate and sun | 1 |
-| `luw_upscale_image` | Enhance and enlarge 2/4/8× | 1 |
+| `luw_upscale_image` | Enhance and enlarge 2/3/4× (8× gives 4×) | 1 |
 | `luw_expand_image` | Outpaint a cropped photo to a wider view | 1 |
 | `luw_remove_furniture` | Empty a furnished room | 1 |
 | `luw_vectorize_image` | Photo or drawing to SVG | 1 |
@@ -330,7 +330,7 @@ Every generation uses your [Luw.ai credits](https://app.luw.ai/pricing). Variati
 | `luw_studio_create_project` | A new project: an empty site, or a starter house (`list_templates`) |
 | `luw_studio_rename_project` | Rename a project |
 | `luw_studio_undo` | Put back the scene from before the last assistant edit (again: redo) |
-| Scene tools | Luw Studio's editor tools, each taking a `project_id`: read (`get_level_summary`, `get_zones`, `get_walls`, `find_nodes`, `measure`, `verify_scene`, …) and build (`create_story_shell`, `create_room`, `add_wall`, `add_door`, `add_window`, `create_stair`, `create_roof`, `furnish_room`, `place_items`, `paint`, `apply_patch`, …) |
+| Scene tools | Luw Studio's editor tools, each taking a `project_id`: read (`get_level_summary`, `get_zones`, `get_walls`, `find_by_type`, `measure`, `verify_scene`, …) and build (`create_story_shell`, `create_room`, `add_wall`, `add_door`, `add_window`, `create_stair`, `create_roof`, `furnish_room`, `place_items`, `paint`, `apply_patch`, …) |
 
 The scene tools run on the same core as Luw Studio, with its catalog (Luw's own pieces included) and its defaults. They don't use credits. A project last saved by the previous Luw Studio is readable; open it once in Studio to edit it here. `luw://studio/guide` is the building guide the assistant reads first.
 
@@ -348,12 +348,12 @@ Read-only context you can attach to a conversation. In Claude Code, type `@luw:`
 
 ## How it works
 
-- **Local files just work.** Any image argument accepts an `https://` URL, a local path (`~/Desktop/room.jpg`), or a `data:` URI. Local files are uploaded to Luw.ai storage as temporary files (deleted after 12 hours) and cached for the session, so repeated edits don't upload the same file again.
+- **Local files just work.** Any image argument accepts an `https://` URL, a local path (`~/Desktop/room.jpg`), or a `data:` URI. Local files are uploaded to Luw.ai storage as temporary files (not added to your library) and cached for the session, so repeated edits don't upload the same file again.
 - **You see the results.** Finished images are embedded in the tool result, so Claude and other clients show them inline. Set `LUW_OUTPUT_DIR` to also save every result to disk.
 - **Long jobs don't time out.** A call waits up to 50 seconds and streams progress to clients that show it. If a job like a video takes longer, the tool returns a `processing_url` and the assistant collects it with `luw_get_result`, without generating (or paying) twice.
 - **Never billed twice.** Every generation request carries an `Idempotency-Key`, so if a network error forces a retry, Luw.ai returns the original job instead of charging again.
 - **Masks are handled for you.** `luw_segment` returns masks as URLs, so *"change the floor"* becomes segment ⟶ magic wand with no manual masking.
-- **Fast startup.** The package is one bundled file with zero dependencies, so `npx` downloads a single ~0.9 MB package and starts right away.
+- **Fast startup.** The package is bundled with zero runtime dependencies, so `npx` downloads a single ~2 MB package and starts right away.
 
 ## Configuration
 

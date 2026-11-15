@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Server } from "./context.js";
 
-const imageArg = z.string().describe("Image URL or local file path");
+const imageArg = z.string().describe("Image: a public https:// link or data: URI; the local npx server also accepts a file path");
 
 function userPrompt(text: string) {
   return { messages: [{ role: "user" as const, content: { type: "text" as const, text } }] };

@@ -53,7 +53,7 @@
     { "name": "luw_edit_image", "description": "Edit an image with a plain-language instruction" },
     { "name": "luw_magic_wand", "description": "Replace, remove or re-surface a masked area" },
     { "name": "luw_landscape_design", "description": "Design gardens and outdoor areas for the local climate" },
-    { "name": "luw_upscale_image", "description": "Enhance and enlarge an image 2x, 4x or 8x" },
+    { "name": "luw_upscale_image", "description": "Enhance and enlarge an image 2x, 3x or 4x (8x gives 4x)" },
     { "name": "luw_expand_image", "description": "Outpaint a cropped photo to a wider view" },
     { "name": "luw_remove_furniture", "description": "Empty a furnished room photo" },
     { "name": "luw_vectorize_image", "description": "Convert a photo or drawing to SVG" },
@@ -73,7 +73,7 @@
   ],
   "tools_generated": false,
   "keywords": ["interior design", "architecture", "rendering", "real estate", "virtual staging", "image editing", "3d", "video"],
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "privacy_policies": ["https://app.luw.ai/docs/privacy"],
   "compatibility": {
     "platforms": ["darwin", "win32", "linux"],

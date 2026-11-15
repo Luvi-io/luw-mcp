@@ -44,8 +44,10 @@ export async function runJobs(ctx: ToolContext, label: string, paramSets: Params
 
   await Promise.all(
     paramSets.map(async (params, index) => {
+      let processingUrl: string | undefined;
       try {
         const first = interpretJob(await ctx.client.generate(params, ctx.signal));
+        if (!first.done) processingUrl = first.processingUrl;
         const state: JobState = first.done
           ? first
           : await ctx.client.waitForResult(first.processingUrl, {
@@ -66,6 +68,11 @@ export async function runJobs(ctx: ToolContext, label: string, paramSets: Params
       } catch (error) {
         // A rejected key fails every variation alike: fail the whole call, so the client can ask to sign in again.
         if (ctx.signal.aborted || (error instanceof LuwApiError && error.rejectedKey)) throw error;
+        // Luw.ai took the (paid) job and only a poll failed: the job still runs, so hand back its processing_url.
+        if (processingUrl && lostContact(error)) {
+          outcome.pending.push({ index, processingUrl });
+          return;
+        }
         outcome.failed.push({ index, error: errorMessage(error) });
       }
     }),
@@ -76,6 +83,15 @@ export async function runJobs(ctx: ToolContext, label: string, paramSets: Params
   outcome.pending.sort((a, b) => a.index - b.index);
   outcome.failed.sort((a, b) => a.index - b.index);
   return outcome;
+}
+
+/**
+ * A network error (no HTTP status, no response body) or a 5xx while talking to Luw.ai, as opposed to an
+ * answer about the job itself (a failed generation carries the response it came in).
+ */
+function lostContact(error: unknown): boolean {
+  if (!(error instanceof LuwApiError)) return false;
+  return error.httpStatus === undefined ? error.details === undefined : error.httpStatus >= 500;
 }
 
 export interface FormatOptions {

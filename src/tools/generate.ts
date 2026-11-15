@@ -9,7 +9,7 @@ import { formatOutcome, runJobs, type FormatOptions } from "../jobs.js";
 // (`room_type` → `knows`, `engine` → `luwmodel`, …); the mapping lives in each tool.
 // ---------------------------------------------------------------------------
 
-const IMAGE_HINT = "https:// URL, local file path, or data: URI";
+const IMAGE_HINT = "public https:// link or data: URI; the local npx server also accepts a file path";
 const imageInput = (what: string) => z.string().min(1).describe(`${what} (${IMAGE_HINT}).`);
 
 const f = {
@@ -28,8 +28,19 @@ const f = {
     .string()
     .optional()
     .describe(`Style-transfer source: an image whose look to copy (${IMAGE_HINT}), or "persona" to use slot 1 of persona_id.`),
-  personaId: z.number().int().positive().optional().describe("Persona whose saved images and style knowledge to use."),
-  seed: z.number().int().min(0).optional().describe("Fix for reproducible results."),
+  personaId: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe("Persona whose saved images to use. Its saved styles and room or building type apply unless you send styles or a type."),
+  // Luw.ai uses a seed only for text-to-image (luw_generate_image without a guide image), so only that tool takes one.
+  seed: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe("Same seed and prompt give the same image. Text-to-image only: ignored with a guide image or svg."),
   precision: z
     .number()
     .int()
@@ -38,6 +49,21 @@ const f = {
     .optional()
     .describe("How strictly to keep the input's structure: 90 = precise, 75 = balanced, 40 = creative."),
   enhancePrompt: z.boolean().optional().describe("Let Luw.ai's prompt enhancer expand a short prompt."),
+  // Interior and Exterior AI: a written prompt is used as written; the strength and the enhancer shape the design
+  // only when it has no written prompt, or follows a style_reference or furnishes an empty room.
+  designPrecision: z
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .optional()
+    .describe(
+      "How much to change: 80+ subtly, 50-79 moderately (default 50), under 50 dramatically. Applies when prompt is empty, with style_reference, or when furnishing an empty room.",
+    ),
+  designEnhancePrompt: z
+    .boolean()
+    .optional()
+    .describe("Let Luw.ai write the design brief when prompt is empty and there is no style_reference. A written prompt is used as written."),
   engine: z.enum(["aria", "symphony"]).optional().describe("Luw.ai model: aria (default) or symphony (Symphony-3)."),
   format: z.enum(["jpg", "png", "webp"]).optional().describe("Output image format."),
   variations: z
@@ -120,10 +146,9 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         empty_room: z.boolean().optional().describe("Furnish from scratch / convert the room to room_type (Fill Empty Room mode)."),
         style_reference: f.styleReference,
         reference_images: f.referenceImages,
-        precision: f.precision,
+        precision: f.designPrecision,
         engine: f.engine,
-        enhance_prompt: f.enhancePrompt,
-        seed: f.seed,
+        enhance_prompt: f.designEnhancePrompt,
         format: f.format,
         variations: f.variations,
         persona_id: f.personaId,
@@ -170,10 +195,9 @@ export function registerGenerateTools(server: Server, deps: Deps) {
           .describe('Building/space type, e.g. "Modern House Exterior", "Luxury Villa Exterior", "Outdoor Patio" (see luw_list_options kind="exterior_types").'),
         style_reference: f.styleReference,
         reference_images: f.referenceImages,
-        precision: f.precision,
+        precision: f.designPrecision,
         engine: f.engine,
-        enhance_prompt: f.enhancePrompt,
-        seed: f.seed,
+        enhance_prompt: f.designEnhancePrompt,
         format: f.format,
         variations: f.variations,
         persona_id: f.personaId,
@@ -207,10 +231,15 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         styles: f.styles,
         space_type: z.string().optional().describe('What the sketch shows, e.g. "Living Room" or "Modern House Exterior".'),
         style_reference: f.styleReference,
-        precision: f.precision,
+        precision: z
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .optional()
+          .describe("How freely the prompt enhancer writes: 90 = precise, 75 = balanced, 40 = creative. Only used with enhance_prompt."),
         engine: f.engine,
         enhance_prompt: f.enhancePrompt,
-        seed: f.seed,
         format: f.format,
         variations: f.variations,
         persona_id: f.personaId,
@@ -237,7 +266,6 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         prompt: f.prompt,
         reference_images: f.referenceImages,
         precision: f.precision,
-        engine: f.engine,
         format: f.format,
         variations: f.variations,
       },
@@ -258,18 +286,22 @@ export function registerGenerateTools(server: Server, deps: Deps) {
       title: "Edit image with a prompt (Magic Prompt AI)",
       description:
         "Luw.ai Magic Prompt AI: edit any image with a plain-language instruction: \"make the sofa green velvet\", \"add a pendant lamp over the table\", \"turn it into a night scene\". " +
-        "Pass products, materials or a mood board as reference_images to place or apply them. For edits restricted to an exact area, use luw_magic_wand. Costs 1 credit per variation.",
+        "Pass products, materials or a mood board as reference_images to place or apply them. For edits restricted to an exact area, use luw_magic_wand. " +
+        "Costs 1 credit per variation (2 at 4k).",
       inputSchema: {
         image: imageInput("Image to edit"),
         prompt: z.string().min(1).max(4000).describe("The edit to make."),
         reference_images: f.referenceImages,
+        // "nano-banana-2" was once listed here; the backend runs it as Symphony, so older clients sending it still work.
         engine: z
-          .enum(["aria", "symphony", "nano-banana-2"])
+          .preprocess((v) => (v === "nano-banana-2" ? "symphony" : v), z.enum(["aria", "symphony"]))
           .optional()
-          .describe("Model: aria (default), symphony (Symphony-3) or nano-banana-2."),
-        resolution: z.enum(["2k", "4k"]).optional().describe("Output resolution (default 2k)."),
+          .describe("Model: aria (default) or symphony (Symphony-3)."),
+        resolution: z
+          .enum(["2k", "4k"])
+          .optional()
+          .describe("Output resolution: 2k (default; free accounts get about 1k) or 4k (2 credits)."),
         enhance_prompt: f.enhancePrompt,
-        seed: f.seed,
         format: f.format,
         variations: f.variations,
       },
@@ -307,8 +339,6 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         keep_structure: z.boolean().optional().describe("Preserve the masked area's geometry/lines while changing its look (structure-guided fill)."),
         engine: f.engine,
         enhance_prompt: f.enhancePrompt,
-        seed: f.seed,
-        format: f.format,
       },
       annotations: { title: "Masked edit", ...GENERATE },
     },
@@ -346,8 +376,6 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         city: z.string().optional().describe('Location, for climate-appropriate planting, e.g. "Antalya".'),
         sun_exposure: z.string().optional().describe('e.g. "Full sun (6+ hours)", "Partial sun (4 - 6 hours)", "Shade (less than 4 hours)".'),
         enhance_prompt: f.enhancePrompt,
-        seed: f.seed,
-        format: f.format,
       },
       annotations: { title: "Landscape design", ...GENERATE },
     },
@@ -372,12 +400,14 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     "luw_upscale_image",
     {
       title: "Upscale an image",
-      description: "Luw.ai Photo Enhance AI: enhance the quality of an image and enlarge it 2x, 4x or 8x. Costs 1 credit.",
+      description: "Luw.ai Photo Enhance AI: enhance the quality of an image and enlarge it 2x, 3x or 4x (8x is sent as 4x). Costs 1 credit.",
       inputSchema: {
         image: imageInput("Image to upscale"),
-        scale: z.union([z.literal(2), z.literal(4), z.literal(8)]).optional().describe("2, 4 or 8 (default 2)."),
+        scale: z
+          .union([z.literal(2), z.literal(3), z.literal(4), z.literal(8)])
+          .optional()
+          .describe("2, 3 or 4 (default 2). 8 is accepted and gives 4x, the largest size."),
         precision: f.precision,
-        format: f.format,
       },
       annotations: { title: "Upscale image", ...GENERATE },
     },
@@ -385,9 +415,8 @@ export function registerGenerateTools(server: Server, deps: Deps) {
       generate(ctx, "Photo Enhance AI", {
         model: "enhance",
         image: await ctx.files.resolve(a.image, { signal: ctx.signal }),
-        hd: String(a.scale ?? 2),
+        hd: String(a.scale === 8 ? 4 : (a.scale ?? 2)),
         precise: a.precision,
-        format: a.format,
       }),
     ),
   );
@@ -397,7 +426,17 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Expand a cropped photo",
       description: "Luw.ai Expand AI: outpaint a tightly cropped architectural or interior photo to a wider view. Costs 1 credit.",
-      inputSchema: { image: imageInput("Photo to expand"), precision: f.precision, format: f.format },
+      inputSchema: {
+        image: imageInput("Photo to expand"),
+        precision: z
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .optional()
+          .describe("How far to extend each side, as a share of the photo's size: 90+ about 10%, 61-89 about 17%, 60 or less about 25% (default)."),
+        format: f.format,
+      },
       annotations: { title: "Expand image", ...GENERATE },
     },
     handler(deps, async (a, ctx) =>
@@ -446,7 +485,6 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         prompt: z.string().max(4000).optional().describe("New background to generate. Leave empty to remove the background."),
         engine: f.engine,
         enhance_prompt: f.enhancePrompt,
-        format: f.format,
       },
       annotations: { title: "Background", ...GENERATE },
     },
@@ -496,13 +534,18 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         'Set format="svg" for a vector illustration (Fluw Vector AI). Costs 2 credits per image.',
       inputSchema: {
         prompt: z.string().min(1).max(4000).describe("What to generate."),
-        aspect_ratio: z.enum(["16:9", "3:2", "4:3", "1:1", "3:4", "2:3", "9:16"]).optional(),
+        aspect_ratio: z
+          .enum(["16:9", "3:2", "4:3", "1:1", "3:4", "2:3", "9:16"])
+          .optional()
+          .describe("Picture shape; 3:2 and 2:3 come out as 4:3 and 3:4."),
         styles: f.styles,
         image: imageInput("Optional guide image").optional(),
-        engine: f.engine,
         enhance_prompt: f.enhancePrompt,
         seed: f.seed,
-        format: z.enum(["jpg", "png", "webp", "svg"]).optional().describe("Output format; svg switches to Fluw Vector AI."),
+        format: z
+          .enum(["jpg", "png", "webp", "svg"])
+          .optional()
+          .describe("Output format; svg switches to Fluw Vector AI, which ignores aspect_ratio and seed."),
         variations: f.variations,
       },
       annotations: { title: "Text to image", ...GENERATE },
@@ -515,14 +558,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         return generate(
           ctx,
           "Fluw Vector AI",
-          {
-            model: "fluwvector",
-            image,
-            prompt: a.prompt,
-            aspect_ratio: a.aspect_ratio,
-            seed: a.seed,
-            enhance_prompt: a.enhance_prompt ? "true" : undefined,
-          },
+          { model: "fluwvector", image, prompt: a.prompt, enhance_prompt: a.enhance_prompt ? "true" : undefined },
           a.variations,
           newPicture,
         );
@@ -540,25 +576,21 @@ export function registerGenerateTools(server: Server, deps: Deps) {
       inputSchema: {
         prompt: z.string().min(1).max(4000).describe('The pattern, e.g. "blue and white Moroccan zellige tiles".'),
         image: imageInput("Optional reference image").optional(),
+        // Any other number (older clients sent 768 or 1024) means the full size.
         size: z
-          .union([z.literal(512), z.literal(768), z.literal(1024)])
+          .number()
+          .int()
+          .positive()
           .optional()
-          .describe("Output size in px. aria: 512 or 768 (default); symphony: 512 or 1024 (default)."),
+          .describe("512 for a small tile; leave it out for the full size. aria: 1024 px small, 2048 px full; symphony: 512 px small, 1024 px full."),
         engine: f.engine,
-        enhance_prompt: f.enhancePrompt,
         format: f.format,
       },
       annotations: { title: "Pattern", ...GENERATE },
     },
     handler(deps, async (a, ctx) => {
-      const symphony = a.engine === "symphony";
-      let texture: number | undefined;
-      if (a.size === 512) texture = -1;
-      else if (a.size === 768 && !symphony) texture = 0;
-      else if (a.size === 1024 && symphony) texture = 1;
-      else if (a.size !== undefined) {
-        throw new InputError(`size ${a.size} isn't available with the ${symphony ? "symphony" : "aria"} engine — use ${symphony ? "512 or 1024" : "512 or 768"}.`);
-      }
+      // The backend's only size switch: texture -1 is the small tile, anything else the full size.
+      const texture = a.size === 512 ? -1 : undefined;
       const image = await ctx.files.resolveOptional(a.image, { signal: ctx.signal });
       return generate(ctx, "Pattern AI", { model: "pattern", image, ...common(a), texture }, undefined, { tile: true });
     }),
@@ -580,8 +612,6 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         prompt: z.string().max(4000).optional().describe("What should happen in the video."),
         camera_motion: z.string().optional().describe('One of the camera motions listed above, e.g. "Flythrough Cinematic".'),
         engine: f.engine,
-        enhance_prompt: f.enhancePrompt,
-        seed: f.seed,
       },
       annotations: { title: "Video", ...GENERATE },
     },
@@ -605,22 +635,28 @@ export function registerGenerateTools(server: Server, deps: Deps) {
       title: "Image to 3D model (3DGen AI)",
       description:
         "Luw.ai 3DGen AI: generate a textured 3D model (GLB) from a photo of an object — furniture, decor, products. Add up to 3 photos from other angles for better accuracy. " +
-        "For text-to-3D, first make an image with luw_generate_image. Costs 3 credits (aria) or 8 (symphony).",
+        "For text-to-3D, first make an image with luw_generate_image. Costs 3 credits (aria) or 8 (symphony, which adds a high-detail texture pack on paid accounts).",
       inputSchema: {
         image: imageInput("Photo of the object"),
         extra_angles: z.array(imageInput("Another angle of the same object")).max(3).optional(),
         engine: f.engine,
-        reflections: z.boolean().optional().describe("Enable reflective materials (symphony engine only)."),
-        simplify: z.number().int().min(0).optional().describe("Mesh simplification level (0 = off, default)."),
-        texture: z.number().int().min(0).optional().describe("Texture size setting (0 = default)."),
-        seed: f.seed,
+        reflections: z.boolean().optional().describe("Reflective (PBR) materials. Paid accounts only."),
+        simplify: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .describe("1 = lighter mesh (150K triangles instead of 500K). Free accounts always get the lighter mesh."),
+        texture: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .describe("High-detail texture pack: 1 = on (the default with symphony), 0 = off. Symphony engine and paid accounts only."),
       },
       annotations: { title: "Image to 3D", ...GENERATE },
     },
     handler(deps, async (a, ctx) => {
-      if (a.reflections && a.engine !== "symphony") {
-        throw new InputError('reflections only works with engine="symphony".');
-      }
       const [image, refs] = await Promise.all([
         ctx.files.resolve(a.image, { signal: ctx.signal }),
         referenceParams(ctx, a.extra_angles, 3),
@@ -629,10 +665,11 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         model: "3dgen",
         image,
         ...refs,
-        ...common({ engine: a.engine, seed: a.seed }),
+        ...common({ engine: a.engine }),
         reflect: a.reflections ? 1 : undefined,
         simplify: a.simplify || undefined,
-        texture: a.texture || undefined,
+        // The texture pack is what Symphony adds, so it's on there unless turned off (the web app's default too).
+        texture: (a.texture ?? (a.engine === "symphony" ? 1 : 0)) || undefined,
       });
     }),
   );

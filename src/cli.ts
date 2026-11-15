@@ -21,7 +21,7 @@ Options:
 Environment:
   LUW_API_KEY                 Your Luw.ai API key (stdio mode) — ${API_KEY_URL}
   LUW_TOOLSETS                Comma list of ${TOOLSETS.join(", ")} or "all"
-                              (default: everything except team)
+                              (default: everything except team and studio)
   LUW_WAIT_TIMEOUT_SECONDS    Max seconds a call waits for a generation (default 50)
   LUW_OUTPUT_DIR              Also download results into this folder (stdio mode)
   LUW_INLINE_IMAGES           Embed result images in tool output (default true)

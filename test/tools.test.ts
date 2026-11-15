@@ -110,9 +110,20 @@ describe("generation", () => {
     let n = 0;
     const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: `https://cdn.test/${++n}.png` }));
     const { call } = await connect(luw.fetch);
-    const result = await call("luw_exterior_design", { image: "https://example.com/h.jpg", variations: 3, seed: 10 });
+    const result = await call("luw_generate_image", { prompt: "a chair", variations: 3, seed: 10 });
     expect(luw.generates().map((g) => g.json.seed)).toEqual([10, 11, 12]);
     expect((result.structuredContent as any).outputs).toHaveLength(3);
+  });
+
+  it("offers seed only where Luw.ai uses one, and drops it quietly elsewhere", async () => {
+    // The backend reads a seed only for text-to-image; older clients may still send one to other tools.
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/x.png" }));
+    const { client, call } = await connect(luw.fetch);
+    const withSeed = (await client.listTools()).tools.filter((t) => "seed" in (t.inputSchema.properties ?? {})).map((t) => t.name);
+    expect(withSeed).toEqual(["luw_generate_image"]);
+    const result = await call("luw_exterior_design", { image: "https://example.com/h.jpg", seed: 10 });
+    expect(result.isError).toBeFalsy();
+    expect(luw.generates()[0]!.json).not.toHaveProperty("seed");
   });
 
   it("hands back a processing_url when the wait runs out, and luw_get_result collects it", async () => {
@@ -209,7 +220,8 @@ describe("generation", () => {
     expect(luw.generates().map((g) => g.json)).toEqual([
       { model: "removebg", image: "https://example.com/p.jpg" },
       { model: "changebg", image: "https://example.com/p.jpg", prompt: "on a marble counter" },
-      { model: "fluwvector", prompt: "logo", aspect_ratio: "1:1" },
+      // Fluw Vector AI has no shape or seed setting, so neither is sent.
+      { model: "fluwvector", prompt: "logo" },
       { model: "enhance", image: "https://example.com/p.jpg", hd: "4" },
       { model: "removefurniture", image: "https://example.com/p.jpg" },
       { model: "vector", image: "https://example.com/p.jpg" },
@@ -232,9 +244,89 @@ describe("generation", () => {
     const { call } = await connect(luw.fetch);
     const wand = await call("luw_magic_wand", { image: "https://e.com/a.jpg", mask_image: "https://e.com/m.png" });
     expect(textOf(wand)).toMatch(/prompt, remove=true, or a material_image/);
-    const pattern = await call("luw_generate_pattern", { prompt: "tiles", size: 1024 });
-    expect(textOf(pattern)).toMatch(/512 or 768/);
     expect(luw.calls).toHaveLength(0);
+  });
+
+  it("sends 4x when 8x is asked (the largest the upscaler makes)", async () => {
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/u.png" }));
+    const { call } = await connect(luw.fetch);
+    await call("luw_upscale_image", { image: "https://e.com/a.jpg", scale: 8 });
+    expect(luw.generates()[0]!.json.hd).toBe("4");
+  });
+
+  it("asks Pattern AI for the small tile only at size 512, on either engine", async () => {
+    // The backend's one size switch is texture -1 (small); older clients' 768 and 1024 mean the full size.
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/t.png" }));
+    const { call } = await connect(luw.fetch);
+    await call("luw_generate_pattern", { prompt: "tiles", size: 512 });
+    await call("luw_generate_pattern", { prompt: "tiles", size: 1024 });
+    await call("luw_generate_pattern", { prompt: "tiles", size: 768, engine: "symphony" });
+    expect(luw.generates().map((g) => g.json.texture)).toEqual([-1, undefined, undefined]);
+  });
+
+  it("keeps accepting the retired Magic Prompt engine name, as Symphony, without listing it", async () => {
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/x.png" }));
+    const { client, call } = await connect(luw.fetch);
+    const tool = (await client.listTools()).tools.find((t) => t.name === "luw_edit_image")!;
+    expect((tool.inputSchema.properties as any).engine.enum).toEqual(["aria", "symphony"]);
+    expect(JSON.stringify(tool)).not.toMatch(/banana/);
+    await call("luw_edit_image", { image: "https://e.com/a.jpg", prompt: "x", engine: "nano-banana-2" });
+    expect(luw.generates()[0]!.json.luwmodel).toBe("symphony-3");
+  });
+
+  it("sends 3DGen reflections on either engine", async () => {
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/m.glb" }));
+    const result = await (await connect(luw.fetch)).call("luw_image_to_3d", { image: "https://e.com/c.jpg", reflections: true });
+    expect(result.isError).toBeFalsy();
+    expect(luw.generates()[0]!.json).toEqual({ model: "3dgen", image: "https://e.com/c.jpg", reflect: 1 });
+  });
+
+  it("turns 3DGen's texture pack on with symphony unless it is turned off", async () => {
+    // The pack is what Symphony adds over Aria; the web app sends it by default too.
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/m.glb" }));
+    const { call } = await connect(luw.fetch);
+    await call("luw_image_to_3d", { image: "https://e.com/c.jpg", engine: "symphony" });
+    await call("luw_image_to_3d", { image: "https://e.com/c.jpg", engine: "symphony", texture: 0 });
+    await call("luw_image_to_3d", { image: "https://e.com/c.jpg" });
+    expect(luw.generates().map((g) => g.json.texture)).toEqual([1, undefined, undefined]);
+  });
+
+  it("offers no setting the backend ignores", async () => {
+    // One model behind Render and Fluw, a fixed output format for these tools, no enhancer for video and patterns.
+    const { client } = await connect(fakeLuw().fetch);
+    const props = Object.fromEntries((await client.listTools()).tools.map((t) => [t.name, Object.keys(t.inputSchema.properties ?? {})]));
+    for (const name of ["luw_render", "luw_generate_image"]) expect(props[name]).not.toContain("engine");
+    for (const name of ["luw_generate_video", "luw_generate_pattern"]) expect(props[name]).not.toContain("enhance_prompt");
+    for (const name of ["luw_magic_wand", "luw_landscape_design", "luw_background", "luw_upscale_image", "luw_vectorize_image"]) {
+      expect(props[name]).not.toContain("format");
+    }
+  });
+
+  it("keeps a paid job collectable when polling loses contact with Luw.ai", async () => {
+    const luw = fakeLuw()
+      .on("POST", "/generate", () => processing("job_7", 5))
+      .on("POST", "/results", () => new Response("boom", { status: 502 }));
+    const result = await (await connect(luw.fetch)).call("luw_render", { image: "https://example.com/a.jpg" });
+    expect(result.isError).toBeFalsy();
+    expect(result.structuredContent).toMatchObject({ status: "processing", processing_urls: ["job_7"] });
+    expect(luw.generates()).toHaveLength(1);
+  });
+
+  it("doesn't blame the key when a poll gets a server error", async () => {
+    const luw = fakeLuw().on("POST", "/results", () => new Response("boom", { status: 502 }));
+    const collect = await (await connect(luw.fetch)).call("luw_get_result", { processing_url: "job_7", wait: false });
+    expect(collect.isError).toBe(true);
+    expect(textOf(collect)).toMatch(/HTTP 502.*the job keeps running/);
+    expect(textOf(collect)).not.toMatch(/API key|reconnect/i);
+  });
+
+  it("still reports a generation that failed on Luw.ai as failed", async () => {
+    const luw = fakeLuw()
+      .on("POST", "/generate", () => processing("job_8", 5))
+      .on("POST", "/results", () => ({ status: true, processing: true, processing_url: "job_8", progress: { state: "failed" }, error: "bad input" }));
+    const result = await (await connect(luw.fetch)).call("luw_render", { image: "https://example.com/a.jpg" });
+    expect(result.structuredContent).toMatchObject({ status: "failed" });
+    expect(textOf(result)).toMatch(/Generation failed: bad input/);
   });
 
   it("always sends landscape big_data as an object (the backend reads big_data[\"city\"])", async () => {
@@ -479,6 +571,18 @@ describe("other tools", () => {
     const result = await call("luw_archigpt", { message: "Where should the bed go?", language: "en" });
     expect(textOf(result)).toContain("Put the bed on the solid wall.");
     expect(luw.generates()[0]!.json).toEqual({ model: "archigpt", prompt: "Where should the bed go?", lang: "en" });
+  });
+
+  it("ArchiGPT's image tag for the Luw.ai apps stays out of the reply", async () => {
+    const message = 'A warm Japandi bedroom suits this room.\n\n[generateinteriorwithluwai="Japandi bedroom, light oak, linen"]';
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, message, usage: 10, left: 990 }));
+    const result = await (await connect(luw.fetch)).call("luw_archigpt", { message: "Ideas for my bedroom?" });
+    expect(textOf(result)).not.toMatch(/withluwai/);
+    expect(textOf(result)).toContain("A warm Japandi bedroom suits this room.");
+    expect(result.structuredContent).toMatchObject({
+      message: "A warm Japandi bedroom suits this room.",
+      image_prompt: "Japandi bedroom, light oak, linen",
+    });
   });
 
   it("lists design styles from the public endpoint without auth", async () => {

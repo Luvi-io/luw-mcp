@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { handler, type Deps, type Server } from "../context.js";
 
+// ArchiGPT ends a reply that calls for a picture with a tag the Luw.ai apps turn into a generation,
+// e.g. [generateinteriorwithluwai="..."]. It isn't for the reader; its prompt goes in structuredContent.
+const IMAGE_TAG = /\s*\[generate(?:interior|exterior|image)withluwai="([\s\S]*?)"\]\s*$/;
+
 export function registerArchiGptTool(server: Server, deps: Deps) {
   server.registerTool(
     "luw_archigpt",
@@ -12,9 +16,12 @@ export function registerArchiGptTool(server: Server, deps: Deps) {
         "so put the details it depends on into the message. Costs 1 credit per ~3000 words.",
       inputSchema: {
         message: z.string().min(1).max(8000).describe("Your question or message, with the details it depends on."),
-        image: z.string().optional().describe("Image to discuss (https:// URL, local file path, or data: URI)."),
+        image: z
+          .string()
+          .optional()
+          .describe("Image to discuss (public https:// link or data: URI; the local npx server also accepts a file path)."),
         language: z.string().optional().describe('Reply language, e.g. "en" or "tr". Auto-detected when omitted.'),
-        persona_id: z.number().int().positive().optional().describe("Persona that remembers this conversation."),
+        persona_id: z.number().int().positive().optional().describe("Persona to file the question under. It doesn't remember earlier calls."),
       },
       annotations: { title: "Ask an architecture expert", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     },
@@ -34,10 +41,13 @@ export function registerArchiGptTool(server: Server, deps: Deps) {
         timeoutMs: 180_000,
         signal: ctx.signal,
       });
+      const raw = body.message ?? "";
+      const tag = IMAGE_TAG.exec(raw);
+      const message = tag ? raw.slice(0, tag.index) : raw;
       const footer = [body.usage !== undefined && `usage ${body.usage}`, body.left !== undefined && `remaining ${body.left}`].filter(Boolean).join(" · ");
       return {
-        content: [{ type: "text", text: `${body.message ?? ""}${footer ? `\n\n[ArchiGPT ${footer}]` : ""}` }],
-        structuredContent: { message: body.message ?? "", usage: body.usage, left: body.left },
+        content: [{ type: "text", text: `${message}${footer ? `\n\n[ArchiGPT ${footer}]` : ""}` }],
+        structuredContent: { message, usage: body.usage, left: body.left, ...(tag ? { image_prompt: tag[1] } : {}) },
       };
     }),
   );

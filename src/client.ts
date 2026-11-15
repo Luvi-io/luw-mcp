@@ -201,7 +201,7 @@ export class LuwClient {
 
   /**
    * Three-step upload: allocate a signed URL, PUT the bytes straight to storage, then finalize.
-   * Temporary uploads get the `x12tmp-` prefix, which Luw.ai deletes after 12 hours.
+   * Temporary uploads get the `x12tmp-` prefix: temporary, not added to the user's library.
    */
   async upload(input: {
     data: Uint8Array;
@@ -302,6 +302,8 @@ function describeHttpError(method: string, path: string, status: number, hosted 
   if (status === 404) return `${where}: not found.`;
   if (status === 429) return `${where}: too many requests. Wait a moment and try again.`;
   if (status >= 500) {
+    // A poll of a job Luw.ai already accepted says nothing about the key.
+    if (path === "/results") return `${where}. Luw.ai is having a temporary problem; the job keeps running, so try again shortly.`;
     // The API currently answers unknown API keys with a 500 instead of its documented auth error.
     return hosted
       ? `${where}. This usually means the key is invalid; reconnect Luw.ai in your assistant. If it keeps happening, Luw.ai is having a temporary problem; try again shortly.`
