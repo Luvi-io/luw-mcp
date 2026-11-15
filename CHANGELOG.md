@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.3.19
+
+- `luw://history/{app}` also lists the app's 10 newest results made through the API and MCP (they are filed apart from the web app's projects, so they never showed). It reads one page from Luw.ai; if that read fails, the projects still show.
+
 ## 0.3.18
 
 - A job Luw.ai accepted is never reported as failed because one poll hit a network error or a 5xx: it comes back as still running, with its `processing_url` for `luw_get_result`. A 5xx on results no longer says the API key may be invalid.

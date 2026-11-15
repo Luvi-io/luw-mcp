@@ -341,7 +341,7 @@ Read-only context you can attach to a conversation. In Claude Code, type `@luw:`
 | Resource | What it holds |
 |---|---|
 | `luw://account` | Your credit balance |
-| `luw://history/{app}` | Your 10 most recently updated projects in one Luw.ai app (Interior, Exterior, Video, …) with their latest results: file links, prompts and source images |
+| `luw://history/{app}` | Your latest results in one Luw.ai app (Interior, Exterior, Video, …): the 10 newest made through the API and MCP, then your 10 most recently updated projects there with their latest results: file links, prompts and source images |
 | `luw://projects/{id}` | One project: its folders and the file link of every item in it |
 | `luw://catalog/{kind}` | Design styles, room and building types, video camera motions, materials and persona professions, with previews |
 | `luw://guide` | Every tool and what it costs |

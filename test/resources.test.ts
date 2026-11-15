@@ -79,6 +79,37 @@ describe("resources", () => {
     expect(text).not.toContain("Nothing yet");
   });
 
+  it("lists an app's results made through the API and MCP first, one page, filtered by tool", async () => {
+    const luw = fakeLuw()
+      .on("GET", "/personas/ft-Fluw", () => ({ status: true, personas: [] }))
+      .on("GET", "/generations/API", () => ({
+        status: true,
+        generations: [
+          { id: 9, section: "fluwvector", created_at: "2026-11-15T21:00:00Z", data: JSON.stringify({ prompt: "logo", final_url: "https://cdn.test/logo.svg" }) },
+          { id: 8, section: "fluw", created_at: "2026-11-15T20:00:00Z", temp: true, data: "{}" },
+        ],
+      }));
+    const { client } = await connect(luw.fetch);
+    const text = await read(client, "luw://history/Fluw");
+    const call = luw.calls.find((c) => c.url.pathname.endsWith("/generations/API"))!;
+    expect(Object.fromEntries(call.url.searchParams)).toEqual({ limit: "10", section: "fluw,fluwvector" });
+    expect(text).toContain("## Made through the API and MCP");
+    expect(text).toContain('- 2026-11-15: https://cdn.test/logo.svg · prompt: "logo"');
+    expect(text).not.toContain("No finished Fluw results yet.");
+  });
+
+  it("still shows the projects when the API results can't be read", async () => {
+    const luw = fakeLuw()
+      .on("GET", "/personas/ft-Video", () => ({ status: true, personas: [{ id: 5, name: "Clip", updated_at: "2026-11-01T00:00:00Z", generations: [{ id: 1, created_at: "2026-11-01T00:00:00Z", data: JSON.stringify({ final_url: "https://cdn.test/v.mp4" }) }] }] }))
+      .on("GET", "/generations/API", () => {
+        throw new Error("boom");
+      });
+    const { client } = await connect(luw.fetch);
+    const text = await read(client, "luw://history/Video");
+    expect(text).toContain("## Clip (project 5, updated 2026-11-01)");
+    expect(text).not.toContain("Made through the API and MCP");
+  });
+
   it("says so when an app has no results, and rejects unknown apps", async () => {
     const luw = fakeLuw().on("GET", "/personas/ft-Video", () => ({ status: true, personas: [] }));
     const { client } = await connect(luw.fetch);

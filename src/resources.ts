@@ -26,6 +26,12 @@ const CATALOG_TITLES: Record<OptionKind, string> = {
 const HISTORY_APPS = PROFESSIONS.filter((p) => p !== "ArchiGPT");
 const HISTORY_PROJECTS = 10;
 const HISTORY_RESULTS = 10;
+/** Requests made without a persona (API, MCP) are filed under the "API" persona; `section` names the tool. */
+const APP_SECTIONS: Partial<Record<(typeof HISTORY_APPS)[number], string[]>> = {
+  ChangeBG: ["changebg", "removebg"],
+  Fluw: ["fluw", "fluwvector"],
+  Video: ["video", "motion"],
+};
 const PROJECT_MEDIA = 200;
 
 /**
@@ -104,18 +110,31 @@ export function registerResources(server: Server, deps: Deps, guide: { instructi
       }),
       {
         title: "Luw.ai history",
-        description: "Your latest projects in one Luw.ai app (Interior, Exterior, Video…) with their recent results: file links, prompts and source images.",
+        description:
+          "Your latest results in one Luw.ai app (Interior, Exterior, Video…), those made through the API and MCP and your recent projects: file links, prompts and source images.",
         mimeType: "text/markdown",
       },
       async (uri, { app }, extra) => {
         const name = HISTORY_APPS.find((a) => a.toLowerCase() === String(app).toLowerCase());
         if (!name) throw new InputError(`Unknown Luw.ai app "${app}". Use one of: ${HISTORY_APPS.join(", ")}.`);
         // The web app's own paged listing: most recently updated projects first, each with its generations.
-        const body = await deps.client.request<{ personas?: Params[] }>("GET", `/personas/ft-${encodeURIComponent(name)}`, {
-          query: { provider: "luw", page: 1, limit: HISTORY_PROJECTS },
-          signal: extra.signal,
-          timeoutMs: 120_000,
-        });
+        // Next to it, the newest results made through the API and MCP for this app (one page, newest first);
+        // if that read fails, the projects still show.
+        const [body, viaApi] = await Promise.all([
+          deps.client.request<{ personas?: Params[] }>("GET", `/personas/ft-${encodeURIComponent(name)}`, {
+            query: { provider: "luw", page: 1, limit: HISTORY_PROJECTS },
+            signal: extra.signal,
+            timeoutMs: 120_000,
+          }),
+          deps.client
+            .request<{ generations?: Params[] }>("GET", "/generations/API", {
+              query: { limit: HISTORY_RESULTS, section: (APP_SECTIONS[name] ?? [name.toLowerCase()]).join(",") },
+              signal: extra.signal,
+            })
+            .then((r) => list(r.generations).filter(isFinished))
+            .catch(() => [] as Params[]),
+        ]);
+        const apiSection = viaApi.length ? ["## Made through the API and MCP", viaApi.map(resultLine).join("\n")] : [];
         const sections = (body.personas ?? []).flatMap((p) => {
           const results = list(p.generations)
             .filter(isFinished)
@@ -127,9 +146,10 @@ export function registerResources(server: Server, deps: Deps, guide: { instructi
         });
         return markdown(uri, [
           `# ${name} history`,
-          sections.length
-            ? `Your ${HISTORY_PROJECTS} most recently updated ${name} projects, newest results first.`
+          sections.length || apiSection.length
+            ? `Your latest ${name} results made through the API and MCP, then your ${HISTORY_PROJECTS} most recently updated ${name} projects, newest results first.`
             : `No finished ${name} results yet.`,
+          ...apiSection,
           ...sections,
         ]);
       },
