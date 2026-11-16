@@ -8,6 +8,23 @@ function userPrompt(text: string) {
 }
 
 export function registerPrompts(server: Server) {
+  // Like Claude's /model: the choice holds for the rest of the conversation. The hosted server keeps no state
+  // between requests, so the conversation itself carries it (each engine setting says to keep the user's pick).
+  server.registerPrompt(
+    "model",
+    {
+      title: "Choose the Luw.ai model",
+      description: "Use Symphony (higher quality, the default) or Aria (quicker, everyday) on every Luw.ai tool for the rest of this chat.",
+      // Typed text, not a list: "Aria" or "symphony " still works, and the tools' own enum tells the model what is valid.
+      argsSchema: { engine: z.string().describe("symphony or aria") },
+    },
+    ({ engine }) =>
+      userPrompt(
+        `For the rest of this conversation, use engine "${engine.trim().toLowerCase()}" on every Luw.ai tool that has an engine setting, unless I ask for another. ` +
+          "Confirm in one short sentence.",
+      ),
+  );
+
   server.registerPrompt(
     "redesign_room",
     {

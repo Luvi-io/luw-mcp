@@ -12,6 +12,17 @@ import { formatOutcome, runJobs, type FormatOptions } from "../jobs.js";
 const IMAGE_HINT = "public https:// link or data: URI; the local npx server also accepts a file path";
 const imageInput = (what: string) => z.string().min(1).describe(`${what} (${IMAGE_HINT}).`);
 
+const ENGINES = ["aria", "symphony"] as const;
+
+/**
+ * A tool's model setting. Left out, it is `fallback`, which the schema lists as the default; common() sends symphony
+ * as luwmodel symphony-3 and aria as no luwmodel (Luw.ai's Aria). "nano-banana-2" was once listed on Magic Prompt;
+ * the backend runs it as Symphony, so older clients sending it still work.
+ */
+const engineField = (fallback: (typeof ENGINES)[number], text: string) =>
+  // The default sits inside the preprocess: outside it, the JSON schema clients read loses "default".
+  z.preprocess((v) => (v === "nano-banana-2" ? "symphony" : v), z.enum(ENGINES).default(fallback)).describe(text);
+
 const f = {
   prompt: z.string().max(4000).optional().describe("What you want, in plain language."),
   styles: z
@@ -64,7 +75,12 @@ const f = {
     .boolean()
     .optional()
     .describe("Let Luw.ai write the design brief when prompt is empty and there is no style_reference. A written prompt is used as written."),
-  engine: z.enum(["aria", "symphony"]).optional().describe("Luw.ai model: aria (default) or symphony (Symphony-3)."),
+  // Symphony, as the Luw.ai apps open their tools. Luw.ai charges both models the same here, except on video.
+  engine: engineField(
+    "symphony",
+    "Luw.ai model: symphony (Symphony-3, the default: the higher quality) or aria (quicker, for everyday work). " +
+      "If the user picked a model earlier in this conversation, use that one.",
+  ),
   format: z.enum(["jpg", "png", "webp"]).optional().describe("Output image format."),
   variations: z
     .number()
@@ -94,7 +110,7 @@ function common(a: CommonArgs): Params {
     seed: a.seed,
     precise: a.precision,
     enhance_prompt: a.enhance_prompt ? "true" : undefined,
-    luwmodel: a.engine === "symphony" ? "symphony-3" : a.engine === "aria" ? undefined : a.engine,
+    luwmodel: a.engine === "symphony" ? "symphony-3" : undefined,
     format: a.format,
   };
 }
@@ -292,11 +308,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         image: imageInput("Image to edit"),
         prompt: z.string().min(1).max(4000).describe("The edit to make."),
         reference_images: f.referenceImages,
-        // "nano-banana-2" was once listed here; the backend runs it as Symphony, so older clients sending it still work.
-        engine: z
-          .preprocess((v) => (v === "nano-banana-2" ? "symphony" : v), z.enum(["aria", "symphony"]))
-          .optional()
-          .describe("Model: aria (default) or symphony (Symphony-3)."),
+        engine: f.engine,
         resolution: z
           .enum(["2k", "4k"])
           .optional()
@@ -605,7 +617,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         "Camera motions: A Forward Dolly, Flythrough Cinematic, Return to Empty Room, Lighting and Color Details, Drone flying to center, Dramatic Zoom Out, " +
         "Reverse Zoom In, Slow Pull Back, Reveal Zoom, Ground to Sky Tilt, Side Tracking Zoom, Aerial Descent. " +
         "Pass end_image to make the video end on that frame, e.g. the original photo as image and its redesign as end_image for a before → after transition. " +
-        "Takes a few minutes — expect a processing_url to collect with luw_get_result. Costs 10 credits (aria) or 20 (symphony), with or without end_image.",
+        "Takes a few minutes — expect a processing_url to collect with luw_get_result. Costs 20 credits (symphony, the default) or 10 (aria), with or without end_image.",
       inputSchema: {
         image: imageInput("Start frame (a render or photo)"),
         end_image: imageInput("Optional end frame the video moves to; use the start frame's aspect ratio").optional(),
@@ -635,11 +647,17 @@ export function registerGenerateTools(server: Server, deps: Deps) {
       title: "Image to 3D model (3DGen AI)",
       description:
         "Luw.ai 3DGen AI: generate a textured 3D model (GLB) from a photo of an object — furniture, decor, products. Add up to 3 photos from other angles for better accuracy. " +
-        "For text-to-3D, first make an image with luw_generate_image. Costs 3 credits (aria) or 8 (symphony, which adds a high-detail texture pack on paid accounts).",
+        "For text-to-3D, first make an image with luw_generate_image. Costs 3 credits (aria, the default) or 8 (symphony, which adds a high-detail texture pack on paid accounts).",
       inputSchema: {
         image: imageInput("Photo of the object"),
         extra_angles: z.array(imageInput("Another angle of the same object")).max(3).optional(),
-        engine: f.engine,
+        // Aria here: Symphony costs 8 credits instead of 3, and on a free account it makes the same model as Aria
+        // (the texture pack is for paid accounts only; longcake Generation, the 3dgen branch).
+        engine: engineField(
+          "aria",
+          "Luw.ai model: aria (the default, 3 credits) or symphony (8 credits; adds the high-detail texture pack on paid accounts). " +
+            "Use symphony only when the user chose it in this conversation; otherwise ask them first, with both prices.",
+        ),
         reflections: z.boolean().optional().describe("Reflective (PBR) materials. Paid accounts only."),
         simplify: z
           .number()

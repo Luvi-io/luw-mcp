@@ -155,6 +155,6 @@ describe("resources", () => {
     const { client } = await connect(fakeLuw().fetch);
     const text = await read(client, "luw://guide");
     for (const tool of (await client.listTools()).tools) expect(text).toContain(`(\`${tool.name}\`)`);
-    expect(text).toContain("Costs 10 credits");
+    expect(text).toContain("Costs 20 credits");
   });
 });

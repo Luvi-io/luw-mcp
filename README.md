@@ -281,7 +281,9 @@ Windows: if `npx` isn't found, use `"command": "cmd", "args": ["/c", "npx", "-y"
 - *"Seamless blue zellige tile texture, 1024px."*
 - *"Ask ArchiGPT how to improve the feng shui of this floor plan."*
 
-Built-in prompts show up as slash commands or prompt templates in your client: `redesign_room`, `stage_empty_room`, `sketch_to_render`, `product_shot`.
+Built-in prompts show up as slash commands or prompt templates in your client: `model`, `redesign_room`, `stage_empty_room`, `sketch_to_render`, `product_shot`.
+
+Tools with an `engine` setting run on Symphony, Luw.ai's higher-quality model, as the Luw.ai apps do; `luw_image_to_3d` runs on Aria and asks before using Symphony. Say "use Aria" (or run the `model` prompt, `/mcp__luw__model` in Claude Code) and the assistant keeps that model for the rest of the chat.
 
 ## Tools
 
@@ -302,7 +304,7 @@ Built-in prompts show up as slash commands or prompt templates in your client: `
 | `luw_segment` | Object masks (all objects, or by prompt) as image URLs | 1 |
 | `luw_generate_image` | Text to image (Fluw), or `format: "svg"` for vectors | 2 |
 | `luw_generate_pattern` | Seamless, tileable textures and patterns | 1 |
-| `luw_generate_video` | Image to cinematic video with 12 camera motions, optionally ending on an `end_image` | 10 (20 with Symphony) |
+| `luw_generate_video` | Image to cinematic video with 12 camera motions, optionally ending on an `end_image` | 20 (10 with Aria) |
 | `luw_image_to_3d` | Photos to a textured 3D model (GLB) | 3 (8 with Symphony) |
 | `luw_archigpt` | Ask ArchiGPT, an AI architect, a standalone question (accepts images) | 1 per ~3k words |
 | `luw_get_result` | Collect a long-running job (free) | 0 |

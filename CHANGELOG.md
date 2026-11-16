@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.3.20
+
+- Tools with an `engine` setting run on Symphony unless Aria is picked, as the Luw.ai apps open them: interior, exterior, sketch, Magic Prompt, Magic Wand, background, pattern and video (video costs 20 credits on Symphony, 10 on Aria). The schema lists each default. `luw_image_to_3d` stays on Aria (3 credits; Symphony is 8 and adds the texture pack on paid accounts only), and its assistant asks before using Symphony.
+- A `model` prompt (`/mcp__luw__model` in Claude Code) picks Symphony or Aria for the rest of the chat, and each engine setting tells the assistant to keep a model the user picked.
+- Every tool's engine setting is the same one (the retired `nano-banana-2` name is read as Symphony on all of them).
+
 ## 0.3.19
 
 - `luw://history/{app}` also lists the app's 10 newest results made through the API and MCP (they are filed apart from the web app's projects, so they never showed). It reads one page from Luw.ai; if that read fails, the projects still show.

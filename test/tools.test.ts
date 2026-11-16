@@ -218,8 +218,8 @@ describe("generation", () => {
     await call("luw_remove_furniture", { image: "https://example.com/p.jpg" });
     await call("luw_vectorize_image", { image: "https://example.com/p.jpg" });
     expect(luw.generates().map((g) => g.json)).toEqual([
-      { model: "removebg", image: "https://example.com/p.jpg" },
-      { model: "changebg", image: "https://example.com/p.jpg", prompt: "on a marble counter" },
+      { model: "removebg", image: "https://example.com/p.jpg", luwmodel: "symphony-3" },
+      { model: "changebg", image: "https://example.com/p.jpg", prompt: "on a marble counter", luwmodel: "symphony-3" },
       // Fluw Vector AI has no shape or seed setting, so neither is sent.
       { model: "fluwvector", prompt: "logo" },
       { model: "enhance", image: "https://example.com/p.jpg", hd: "4" },
@@ -234,9 +234,54 @@ describe("generation", () => {
     await call("luw_edit_image", { image: "https://example.com/p.jpg", prompt: "night scene", resolution: "4k" });
     await call("luw_edit_image", { image: "https://example.com/p.jpg", prompt: "night scene", resolution: "2k" });
     expect(luw.generates().map((g) => g.json)).toEqual([
-      { model: "magicprompt", image: "https://example.com/p.jpg", prompt: "night scene", uhd: 1 },
-      { model: "magicprompt", image: "https://example.com/p.jpg", prompt: "night scene" },
+      { model: "magicprompt", image: "https://example.com/p.jpg", prompt: "night scene", luwmodel: "symphony-3", uhd: 1 },
+      { model: "magicprompt", image: "https://example.com/p.jpg", prompt: "night scene", luwmodel: "symphony-3" },
     ]);
+  });
+
+  it("runs on Symphony unless Aria is picked, 3DGen on Aria, and sends no model to tools that have none", async () => {
+    // As the Luw.ai apps open their tools. 3DGen's Symphony costs 8 credits instead of 3 and on a free account
+    // makes Aria's model, so it stays on Aria. Render and Fluw run one model, so luwmodel would mean nothing there.
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/x.png" }));
+    const { call } = await connect(luw.fetch);
+    await call("luw_interior_design", { image: "https://e.com/r.jpg" });
+    await call("luw_interior_design", { image: "https://e.com/r.jpg", engine: "aria" });
+    await call("luw_generate_video", { image: "https://e.com/r.jpg" });
+    await call("luw_image_to_3d", { image: "https://e.com/c.jpg" });
+    await call("luw_render", { image: "https://e.com/r.jpg" });
+    await call("luw_generate_image", { prompt: "a chair" });
+    expect(luw.generates().map((g) => g.json.luwmodel)).toEqual(["symphony-3", undefined, "symphony-3", undefined, undefined, undefined]);
+  });
+
+  it("lists each tool's default model in its schema, as an optional setting", async () => {
+    const { client } = await connect(fakeLuw().fetch);
+    const tools = (await client.listTools()).tools;
+    const withEngine = tools.filter((t) => (t.inputSchema.properties as any)?.engine);
+    expect(withEngine.map((t) => t.name).sort()).toEqual([
+      "luw_background",
+      "luw_edit_image",
+      "luw_exterior_design",
+      "luw_generate_pattern",
+      "luw_generate_video",
+      "luw_image_to_3d",
+      "luw_interior_design",
+      "luw_magic_wand",
+      "luw_sketch_to_render",
+    ]);
+    for (const t of withEngine) {
+      const engine = (t.inputSchema.properties as any).engine;
+      expect(engine.enum).toEqual(["aria", "symphony"]);
+      expect(engine.default).toBe(t.name === "luw_image_to_3d" ? "aria" : "symphony");
+      expect(t.inputSchema.required ?? []).not.toContain("engine");
+    }
+  });
+
+  it("offers a model prompt that keeps the pick for the rest of the chat", async () => {
+    const { client } = await connect(fakeLuw().fetch);
+    const prompt = await client.getPrompt({ name: "model", arguments: { engine: " Aria " } });
+    const text = (prompt.messages[0]!.content as { text: string }).text;
+    expect(text).toContain('use engine "aria" on every Luw.ai tool');
+    expect(text).toContain("rest of this conversation");
   });
 
   it("validates inputs before spending credits", async () => {
