@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `luw_render`, `luw_interior_design` and `luw_exterior_design` take `resolution: "4k"`, as `luw_edit_image` does: it sends `uhd=1`, the 4K switch the luw.ai form offers on Render, Interior, Exterior and Magic Prompt. 4K costs one more credit per variation (2 instead of 1).
+
 ## 0.3.21
 
 - `bathroom_add` fits a shower or a bath into bathrooms of ordinary size (Luw Studio's change of 2026-11-22): the room kept in front is the way in (0.6 m of a shower's front, 0.7 m of a bath's side), so the toilet may stand beside the bath; showers go down to 0.8 m a side and either way round; a basin wants 0.6 m in front, not 0.7; and every place for the shower or bath is tried, not the 16 roomiest. A 5 ft by 8 ft bathroom gets its bath, and a shower usually fits from about 1.5 m by 2.1 m inside, where before no room under 2 m by 2 m was sure of one. Toilet clearances and the door's swing are unchanged.

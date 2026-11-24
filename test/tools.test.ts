@@ -239,6 +239,40 @@ describe("generation", () => {
     ]);
   });
 
+  it("asks Render, Interior and Exterior AI for 4K with uhd=1, as the luw.ai form does, and 2K with nothing", async () => {
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/x.png" }));
+    const { client, call } = await connect(luw.fetch);
+    const image = "https://example.com/p.jpg";
+    const tools = (await client.listTools()).tools;
+    for (const name of ["luw_render", "luw_interior_design", "luw_exterior_design"]) {
+      const tool = tools.find((t) => t.name === name)!;
+      expect((tool.inputSchema.properties as any).resolution.enum).toEqual(["2k", "4k"]);
+      expect(tool.description).toContain("Costs 1 credit per variation (2 at 4k).");
+      await call(name, { image, resolution: "4k" });
+      await call(name, { image, resolution: "2k" });
+      await call(name, { image });
+    }
+    expect(luw.generates().map((g) => g.json)).toEqual([
+      { model: "render", image, uhd: 1 },
+      { model: "render", image },
+      { model: "render", image },
+      { model: "interior", image, luwmodel: "symphony-3", uhd: 1 },
+      { model: "interior", image, luwmodel: "symphony-3" },
+      { model: "interior", image, luwmodel: "symphony-3" },
+      { model: "exterior", image, luwmodel: "symphony-3", uhd: 1 },
+      { model: "exterior", image, luwmodel: "symphony-3" },
+      { model: "exterior", image, luwmodel: "symphony-3" },
+    ]);
+  });
+
+  it("offers 4K only where the luw.ai form has the switch", async () => {
+    // Render, Interior, Exterior and Magic Prompt have it; Landscape, for one, has no 4K switch on luw.ai.
+    const { client } = await connect(fakeLuw().fetch);
+    const tools = (await client.listTools()).tools;
+    const with4k = tools.filter((t) => (t.inputSchema.properties as any)?.resolution).map((t) => t.name);
+    expect(with4k.sort()).toEqual(["luw_edit_image", "luw_exterior_design", "luw_interior_design", "luw_render"]);
+  });
+
   it("runs on Symphony unless Aria is picked, 3DGen on Aria, and sends no model to tools that have none", async () => {
     // As the Luw.ai apps open their tools. 3DGen's Symphony costs 8 credits instead of 3 and on a free account
     // makes Aria's model, so it stays on Aria. Render and Fluw run one model, so luwmodel would mean nothing there.

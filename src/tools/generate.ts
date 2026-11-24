@@ -82,6 +82,11 @@ const f = {
       "If the user picked a model earlier in this conversation, use that one.",
   ),
   format: z.enum(["jpg", "png", "webp"]).optional().describe("Output image format."),
+  // Render, Interior, Exterior and Magic Prompt AI: the luw.ai form's 4K switch, sent by common() as uhd=1.
+  resolution: z
+    .enum(["2k", "4k"])
+    .optional()
+    .describe("Output resolution: 2k (default; free accounts get about 1k) or 4k (2 credits)."),
   variations: z
     .number()
     .int()
@@ -100,6 +105,7 @@ type CommonArgs = {
   enhance_prompt?: boolean;
   engine?: string;
   format?: string;
+  resolution?: string;
 };
 
 function common(a: CommonArgs): Params {
@@ -112,6 +118,9 @@ function common(a: CommonArgs): Params {
     enhance_prompt: a.enhance_prompt ? "true" : undefined,
     luwmodel: a.engine === "symphony" ? "symphony-3" : undefined,
     format: a.format,
+    // The 4K switch is uhd=1 (longcake Generation.uhd?); Magic Prompt never read hd, so "4k" came back 2K.
+    // 2K is the backend default, so "2k" sends nothing.
+    uhd: a.resolution === "4k" ? 1 : undefined,
   };
 }
 
@@ -153,7 +162,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
       description:
         "Luw.ai Interior AI: redesign an interior photo — home, office, shop, hotel — in any style while keeping the room's architecture. " +
         "Restyles furniture, materials, colors and lighting. Set empty_room=true to furnish an empty room or turn it into another room type (virtual staging). " +
-        "Costs 1 credit per variation.",
+        "Costs 1 credit per variation (2 at 4k).",
       inputSchema: {
         image: imageInput("Photo of the room"),
         prompt: f.prompt,
@@ -164,6 +173,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         reference_images: f.referenceImages,
         precision: f.designPrecision,
         engine: f.engine,
+        resolution: f.resolution,
         enhance_prompt: f.designEnhancePrompt,
         format: f.format,
         variations: f.variations,
@@ -200,7 +210,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
       title: "Exterior design (Exterior AI)",
       description:
         "Luw.ai Exterior AI: redesign a building exterior or facade photo — houses, villas, apartments, commercial buildings — in a new architectural style, " +
-        "with new materials, colors and landscaping, keeping the structure. Costs 1 credit per variation.",
+        "with new materials, colors and landscaping, keeping the structure. Costs 1 credit per variation (2 at 4k).",
       inputSchema: {
         image: imageInput("Photo of the building"),
         prompt: f.prompt,
@@ -213,6 +223,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         reference_images: f.referenceImages,
         precision: f.designPrecision,
         engine: f.engine,
+        resolution: f.resolution,
         enhance_prompt: f.designEnhancePrompt,
         format: f.format,
         variations: f.variations,
@@ -276,12 +287,13 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     {
       title: "Photorealistic render (Render AI)",
       description:
-        "Luw.ai Render AI: turn a 3D model view, CAD/BIM screenshot, clay render or basic visualization into a photorealistic architectural render. Costs 1 credit per variation.",
+        "Luw.ai Render AI: turn a 3D model view, CAD/BIM screenshot, clay render or basic visualization into a photorealistic architectural render. Costs 1 credit per variation (2 at 4k).",
       inputSchema: {
         image: imageInput("The 3D view or base render"),
         prompt: f.prompt,
         reference_images: f.referenceImages,
         precision: f.precision,
+        resolution: f.resolution,
         format: f.format,
         variations: f.variations,
       },
@@ -309,10 +321,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         prompt: z.string().min(1).max(4000).describe("The edit to make."),
         reference_images: f.referenceImages,
         engine: f.engine,
-        resolution: z
-          .enum(["2k", "4k"])
-          .optional()
-          .describe("Output resolution: 2k (default; free accounts get about 1k) or 4k (2 credits)."),
+        resolution: f.resolution,
         enhance_prompt: f.enhancePrompt,
         format: f.format,
         variations: f.variations,
@@ -324,10 +333,7 @@ export function registerGenerateTools(server: Server, deps: Deps) {
         ctx.files.resolve(a.image, { signal: ctx.signal }),
         referenceParams(ctx, a.reference_images),
       ]);
-      // Magic Prompt's 4K switch is uhd=1 (longcake Generation.uhd?); it never read hd, so "4k" came back 2K.
-      // 2K is the backend default, so "2k" sends nothing.
-      const uhd = a.resolution === "4k" ? 1 : undefined;
-      return generate(ctx, "Magic Prompt AI", { model: "magicprompt", image, ...common(a), uhd, ...refs }, a.variations);
+      return generate(ctx, "Magic Prompt AI", { model: "magicprompt", image, ...common(a), ...refs }, a.variations);
     }),
   );
 

@@ -289,10 +289,10 @@ Tools with an `engine` setting run on Symphony, Luw.ai's higher-quality model, a
 
 | Tool | What it does | Credits |
 |---|---|---|
-| `luw_interior_design` | Redesign a room in any style; `empty_room` for virtual staging | 1 |
-| `luw_exterior_design` | Redesign a facade or building exterior | 1 |
+| `luw_interior_design` | Redesign a room in any style; `empty_room` for virtual staging; 2K/4K | 1 (2 at 4K) |
+| `luw_exterior_design` | Redesign a facade or building exterior; 2K/4K | 1 (2 at 4K) |
 | `luw_sketch_to_render` | Sketch or drawing to photoreal render | 1 |
-| `luw_render` | 3D, CAD or clay view to photoreal render | 1 |
+| `luw_render` | 3D, CAD or clay view to photoreal render; 2K/4K | 1 (2 at 4K) |
 | `luw_edit_image` | Edit any image with a sentence (Magic Prompt); 2K/4K | 1 (2 at 4K) |
 | `luw_magic_wand` | Masked edit: replace, remove, or apply a material | 1 |
 | `luw_landscape_design` | Gardens and outdoor areas, matched to climate and sun | 1 |
