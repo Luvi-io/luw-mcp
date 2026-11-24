@@ -20,7 +20,7 @@ function instructions(config: LuwConfig): string {
     "Luw.ai: AI tools for interior, exterior and landscape design, architectural rendering, image editing, video and 3D.",
     local
       ? "Image inputs accept https:// URLs, local file paths or data: URIs; local files are uploaded to Luw.ai automatically."
-      : "Image inputs are public https:// links or data: URIs; a photo attached in the chat goes in image_file. This hosted server can't read files on the user's computer.",
+      : "Image inputs are public https:// links or data: URIs; a photo attached in the chat goes in image_file. This hosted server can't read files on the user's computer; luw_create_upload gives a link to send one to (a view captured in Rhino or another app).",
     `Generations wait up to ${config.waitTimeoutSeconds}s. A tool that returns a processing_url is still running; luw_get_result collects it and can be called again while it runs. Running the generation again would use credits twice.`,
     "Each generation uses credits from the user's Luw.ai account; variations multiply the cost.",
     "luw_list_options lists valid style, room type, camera motion and material names.",

@@ -744,6 +744,109 @@ describe("other tools", () => {
     const { client } = await connect(fakeLuw().fetch, { mode: "remote" });
     const names = (await client.listTools()).tools.map((t) => t.name);
     for (const name of ["luw_run_model", "luw_personas", "luw_projects"]) expect(names).not.toContain(name);
-    expect(names).toHaveLength(21);
+    expect(names).toHaveLength(22);
+  });
+});
+
+describe("luw_create_upload", () => {
+  const SLOT = /^x12tmp-[a-z0-9]+-put-(.+)$/;
+  // Luw.ai storage keeps the file name it was given (as in the app: i.luvicdn.com/luwai/<user>/x12tmp-….png).
+  function uploadSlots(luw: ReturnType<typeof fakeLuw>) {
+    return luw.on("POST", "/upload", (req) => {
+      const name = String(req.form!.get("filename"));
+      return { status: true, signed_url: `https://storage.test/put/${name}?sig=1`, final_url: `https://cdn.test/luwai/7/${name}` };
+    });
+  }
+
+  it("is on the hosted server only, where files can't be read from the user's computer", async () => {
+    const list = async (mode: "local" | "remote") => (await (await connect(fakeLuw().fetch, { mode })).client.listTools()).tools;
+    const tool = (await list("remote")).find((t) => t.name === "luw_create_upload")!;
+    expect(tool.description).toMatch(/PUT/);
+    expect(tool.description).toMatch(/Never put image bytes or base64/);
+    expect((await list("local")).map((t) => t.name)).not.toContain("luw_create_upload");
+  });
+
+  it("returns the signed PUT URL, the headers it needs and the final URL, uploading nothing itself", async () => {
+    const luw = uploadSlots(fakeLuw());
+    const { call } = await connect(luw.fetch, { mode: "remote", apiKey: "oauth-key" });
+    const result = await call("luw_create_upload", {});
+    expect(result.isError).toBeFalsy();
+    const data = result.structuredContent as { method: string; put_url: string; image_url: string; headers: Record<string, string> };
+    expect(data.method).toBe("PUT");
+    expect(data.put_url).toMatch(/^https:\/\/storage\.test\/put\/x12tmp-/);
+    expect(data.image_url).toMatch(/^https:\/\/cdn\.test\/luwai\/7\/x12tmp-/);
+    expect(data.headers["Content-Type"]).toBe("image/jpeg");
+    expect(data.headers["Cache-Control"]).toBe("max-age=315360000");
+    expect(textOf(result)).toContain(data.put_url);
+    expect(textOf(result)).toContain(data.image_url);
+
+    // The signed-in user's own key asks for the link, and the server sends no bytes and checks nothing yet.
+    expect(luw.calls.map((c) => `${c.method} ${c.url.pathname}`)).toEqual(["POST /v2/upload"]);
+    expect(luw.calls[0]!.headers.get("authorization")).toBe("Bearer oauth-key");
+    expect(String(luw.calls[0]!.form!.get("filename"))).toMatch(SLOT);
+  });
+
+  it("sets the Content-Type from the file name and refuses anything that isn't a picture", async () => {
+    const luw = uploadSlots(fakeLuw());
+    const { call } = await connect(luw.fetch, { mode: "remote" });
+    const png = await call("luw_create_upload", { filename: "North facade 1.PNG" });
+    expect((png.structuredContent as any).headers["Content-Type"]).toBe("image/png");
+    expect(SLOT.exec(String(luw.calls[0]!.form!.get("filename")))![1]).toMatch(/^North-facade-1\.PNG$/);
+
+    for (const filename of ["notes.txt", "model.glb", "view", "../view.png", "a/b.jpg", "x".repeat(80) + ".png"]) {
+      const result = await call("luw_create_upload", { filename }).catch((error: Error) => error);
+      expect(result instanceof Error || (result as { isError?: boolean }).isError, filename).toBe(true);
+    }
+    expect(luw.calls).toHaveLength(1);
+  });
+
+  it("has Luw.ai check the uploaded picture before a tool uses it, then generates from it", async () => {
+    const luw = uploadSlots(fakeLuw())
+      .on("GET", "/finalize_upload", () => ({ status: true }))
+      .on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/render.png" }));
+    const { call } = await connect(luw.fetch, { mode: "remote" });
+    const slot = (await call("luw_create_upload", { filename: "view.jpg" })).structuredContent as { image_url: string };
+    const result = await call("luw_render", { image: slot.image_url, prompt: "golden hour" });
+    expect(result.isError).toBeFalsy();
+    const order = luw.calls.map((c) => `${c.method} ${c.url.pathname}`).filter((c) => !c.endsWith("/upload"));
+    expect(order.slice(0, 2)).toEqual(["GET /v2/finalize_upload", "POST /v2/generate"]);
+    expect(luw.calls.find((c) => c.url.pathname.endsWith("/finalize_upload"))!.url.searchParams.get("url")).toBe(slot.image_url);
+    expect(luw.generates()[0]!.json.image).toBe(slot.image_url);
+  });
+
+  it("spends nothing when the picture was never sent or Luw.ai refuses it", async () => {
+    const luw = uploadSlots(fakeLuw()).on("GET", "/finalize_upload", () => ({ status: false, error: "file not found" }));
+    const { call } = await connect(luw.fetch, { mode: "remote" });
+    const slot = (await call("luw_create_upload", {})).structuredContent as { image_url: string };
+    const result = await call("luw_render", { image: slot.image_url });
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toMatch(/send the file to its put_url first, or Luw\.ai refused it\. No credits were used\. \(.*file not found/);
+    expect(luw.generates()).toHaveLength(0);
+  });
+
+  it("doesn't check links it didn't hand out, and keeps a rejected key's reconnect error", async () => {
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/out.png" }));
+    const { call } = await connect(luw.fetch, { mode: "remote" });
+    await call("luw_render", { image: "https://i.luvicdn.com/luwai/1/x12tmp-5484-1787332371.png" });
+    await call("luw_render", { image: "https://e.com/put-view.png" });
+    expect(luw.calls.some((c) => c.url.pathname.endsWith("/finalize_upload"))).toBe(false);
+
+    const rejected = fakeLuw().on("GET", "/finalize_upload", () => new Response(JSON.stringify({ status: false, errors: { auth: ["bad"] } }), { status: 401 }));
+    const { call: hosted } = await connect(rejected.fetch, { mode: "remote" });
+    const result = await hosted("luw_render", { image: "https://cdn.test/luwai/7/x12tmp-ab12cd-put-view.jpg" });
+    expect(textOf(result)).toMatch(/Luw\.ai rejected this connection's key/);
+    expect(textOf(result)).not.toMatch(/put_url/);
+  });
+
+  it("hands out no link it couldn't follow up on", async () => {
+    const luw = fakeLuw().on("POST", "/upload", () => ({ status: true, signed_url: "https://storage.test/put/1", final_url: "https://cdn.test/renamed/1.jpg" }));
+    const result = await (await connect(luw.fetch, { mode: "remote" })).call("luw_create_upload", {});
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toMatch(/can't check/);
+  });
+
+  it("points an assistant that passes a local path to the upload link", async () => {
+    const result = await (await connect(fakeLuw().fetch, { mode: "remote" })).call("luw_render", { image: "C:\\Temp\\view.png" });
+    expect(textOf(result)).toMatch(/luw_create_upload/);
   });
 });

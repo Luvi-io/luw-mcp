@@ -64,6 +64,8 @@ const UPLOAD_CACHE_HEADERS = {
   "Cache-Control": "max-age=315360000",
   Expires: "Sun, 19 Jul 2030 18:06:32 GMT",
 };
+// In the name of every file an assistant PUTs itself (luw_create_upload), which nothing has checked yet.
+const SLOT_MARK = "put";
 
 export interface LuwClientOptions {
   apiKey: string;
@@ -211,23 +213,13 @@ export class LuwClient {
     personaId?: number;
     signal?: AbortSignal;
   }): Promise<string> {
-    const form = new FormData();
-    form.append("filename", uploadName(input.filename, input.temporary ?? true));
-    if (input.personaId !== undefined) form.append("pid", String(input.personaId));
-    const slot = await this.request<{ signed_url?: string; final_url?: string }>("POST", "/upload", {
-      form,
-      signal: input.signal,
-      retry: true,
-    });
-    if (!slot.signed_url || !slot.final_url) {
-      throw new LuwApiError("Luw.ai /upload did not return signed_url and final_url", slot);
-    }
+    const slot = await this.allocate(uploadName(input.filename, input.temporary ?? true), input.personaId, input.signal);
 
     const timeout = linkedTimeout(input.signal, 300_000);
     try {
-      const put = await this.fetchImpl(slot.signed_url, {
+      const put = await this.fetchImpl(slot.signedUrl, {
         method: "PUT",
-        headers: { "Content-Type": input.contentType, ...UPLOAD_CACHE_HEADERS },
+        headers: uploadHeaders(input.contentType),
         body: input.data as BodyInit,
         signal: timeout.signal,
       });
@@ -239,9 +231,57 @@ export class LuwClient {
       timeout.clear();
     }
 
-    await this.request("GET", "/finalize_upload", { query: { url: slot.final_url }, signal: input.signal, retry: true });
-    return slot.final_url;
+    await this.finalizeUpload(slot.finalUrl, input.signal);
+    return slot.finalUrl;
   }
+
+  /**
+   * A signed PUT URL the caller uploads to itself, for a picture this server can't reach (a viewport captured in the
+   * user's own app). Temporary, and named so that FileResolver has Luw.ai check it before any tool uses it.
+   */
+  async createUploadSlot(input: {
+    filename: string;
+    contentType: string;
+    signal?: AbortSignal;
+  }): Promise<{ signedUrl: string; finalUrl: string; headers: Record<string, string> }> {
+    const slot = await this.allocate(uploadName(`${SLOT_MARK}-${input.filename}`, true), undefined, input.signal);
+    // Without the mark, a picture nobody checked could be used: don't hand out a link this server can't follow up.
+    if (!isUploadSlot(slot.finalUrl)) {
+      throw new LuwApiError("Luw.ai returned an upload link this server can't check", { final_url: slot.finalUrl });
+    }
+    return { signedUrl: slot.signedUrl, finalUrl: slot.finalUrl, headers: uploadHeaders(input.contentType) };
+  }
+
+  /** Has Luw.ai check a file that was PUT to storage (it refuses what its content rules don't allow). */
+  async finalizeUpload(url: string, signal?: AbortSignal): Promise<void> {
+    await this.request("GET", "/finalize_upload", { query: { url }, signal, retry: true });
+  }
+
+  private async allocate(
+    filename: string,
+    personaId: number | undefined,
+    signal: AbortSignal | undefined,
+  ): Promise<{ signedUrl: string; finalUrl: string }> {
+    const form = new FormData();
+    form.append("filename", filename);
+    if (personaId !== undefined) form.append("pid", String(personaId));
+    const slot = await this.request<{ signed_url?: string; final_url?: string }>("POST", "/upload", { form, signal, retry: true });
+    if (!slot.signed_url || !slot.final_url) {
+      throw new LuwApiError("Luw.ai /upload did not return signed_url and final_url", slot);
+    }
+    return { signedUrl: slot.signed_url, finalUrl: slot.final_url };
+  }
+}
+
+/** Whether a URL is a picture from createUploadSlot: uploaded by the caller, not yet checked by Luw.ai. */
+export function isUploadSlot(url: string): boolean {
+  if (!URL.canParse(url)) return false;
+  const name = new URL(url).pathname.split("/").pop() ?? "";
+  return new RegExp(`^x12tmp-[a-z0-9]+-${SLOT_MARK}-`).test(name);
+}
+
+function uploadHeaders(contentType: string): Record<string, string> {
+  return { "Content-Type": contentType, ...UPLOAD_CACHE_HEADERS };
 }
 
 export function interpretJob(response: JobResponse, processingUrl?: string): JobState {

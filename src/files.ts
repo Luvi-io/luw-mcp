@@ -2,7 +2,7 @@ import { readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, extname, isAbsolute, resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { LuwClient } from "./client.js";
+import { isUploadSlot, LuwApiError, type LuwClient } from "./client.js";
 
 const CONTENT_TYPES: Record<string, string> = {
   jpg: "image/jpeg",
@@ -59,7 +59,10 @@ export class FileResolver {
 
   async resolve(value: string, options: UploadOptions = {}): Promise<string> {
     const input = value.trim();
-    if (/^https?:\/\//i.test(input)) return input;
+    if (/^https?:\/\//i.test(input)) {
+      if (isUploadSlot(input)) await this.checkSlot(input, options.signal);
+      return input;
+    }
     if (/^data:/i.test(input)) {
       const { data, contentType } = decodeDataUri(input);
       const ext = EXTENSIONS_BY_TYPE[contentType] ?? "png";
@@ -68,10 +71,23 @@ export class FileResolver {
     if (this.mode === "remote") {
       throw new InputError(
         `"${truncate(input)}" is not a URL. The hosted Luw.ai MCP server can't read files from your computer — ` +
-          "pass a public https:// URL or a data: URI, or install the local server (npx -y @luw-ai/mcp) to use local file paths.",
+          "pass a public https:// URL or a data: URI, use luw_create_upload and PUT the file to the link it returns, " +
+          "or install the local server (npx -y @luw-ai/mcp) to use local file paths.",
       );
     }
     return this.uploadLocalFile(input, options);
+  }
+
+  /** A picture the caller PUT itself is checked before its paid use, so a missing or refused one costs nothing. */
+  private async checkSlot(url: string, signal: AbortSignal | undefined): Promise<void> {
+    try {
+      await this.client.finalizeUpload(url, signal);
+    } catch (error) {
+      if (!(error instanceof LuwApiError) || error.rejectedKey) throw error;
+      throw new InputError(
+        `Luw.ai can't use the picture at ${url}: send the file to its put_url first, or Luw.ai refused it. No credits were used. (${error.message})`,
+      );
+    }
   }
 
   /** Resolves optional values, leaving undefined alone. */

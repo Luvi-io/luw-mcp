@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `luw_create_upload` (hosted server only): a temporary signed PUT link and the final URL for a picture that is only on the user's computer, such as a view captured in Rhino's AI panel, whose assistant can run code there but can't hand the bytes to a tool. The assistant PUTs the file, then passes the final URL as `image`. Luw.ai checks the picture on its first use (`GET /finalize_upload`, as for every other upload), so one that was never sent or is refused uses no credits. The name in the link carries `x12tmp-…-put-…`, which marks it for that check.
+
 - `luw_render`, `luw_interior_design` and `luw_exterior_design` take `resolution: "4k"`, as `luw_edit_image` does: it sends `uhd=1`, the 4K switch the luw.ai form offers on Render, Interior, Exterior and Magic Prompt. 4K costs one more credit per variation (2 instead of 1).
 
 ## 0.3.21

@@ -99,6 +99,47 @@ export function registerCoreTools(server: Server, deps: Deps) {
     }),
   );
 
+  // The local server reads files from disk itself, so only the hosted one needs this.
+  if (deps.config.mode === "remote") {
+    server.registerTool(
+      "luw_create_upload",
+      {
+        title: "Upload a picture from the user's app",
+        description:
+          "Get a temporary link to upload a picture that is only on the user's computer, such as a viewport captured in Rhino, " +
+          "so Luw.ai tools can use it. Free. 1) Call this. 2) Straight away, send the file's bytes to put_url with an HTTP PUT and exactly " +
+          "the returned headers, from code that can reach the file (in Rhino: run_python with urllib.request). " +
+          "3) Pass image_url as image to the Luw.ai tool. " +
+          "Never put image bytes or base64 in an argument, and never upload the picture to another site. " +
+          "Only for pictures the user asked to use; the upload is temporary and not added to their library.",
+        inputSchema: {
+          filename: z
+            .string()
+            .max(60)
+            .regex(/^[A-Za-z0-9][A-Za-z0-9 ._-]*\.(png|jpe?g|webp)$/i, "Give a file name ending in .png, .jpg, .jpeg or .webp.")
+            .optional()
+            .describe('File name; its extension sets the Content-Type the upload must use. Default "view.jpg": JPG at about 90% quality keeps it small.'),
+        },
+        annotations: { title: "Create upload link", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+      },
+      handler(deps, async (a, ctx) => {
+        const filename = a.filename ?? "view.jpg";
+        const contentType = contentTypeForExtension(filename.split(".").pop()!)!;
+        const slot = await ctx.client.createUploadSlot({ filename, contentType, signal: ctx.signal });
+        const headers = Object.entries(slot.headers).map(([k, v]) => `${k}: ${v}`);
+        return text(
+          [
+            "Send the picture's bytes to put_url with a PUT and these headers, then pass image_url as image to a Luw.ai tool.",
+            `put_url: ${slot.signedUrl}`,
+            `headers:\n${headers.join("\n")}`,
+            `image_url: ${slot.finalUrl}`,
+          ].join("\n"),
+          { method: "PUT", put_url: slot.signedUrl, headers: slot.headers, image_url: slot.finalUrl },
+        );
+      }),
+    );
+  }
+
   server.registerTool(
     "luw_list_options",
     {

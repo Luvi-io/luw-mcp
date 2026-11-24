@@ -268,6 +268,20 @@ Click **Add to Kiro** above, confirm, then replace `YOUR_LUW_API_KEY` in Kiro's 
 
 Windows: if `npx` isn't found, use `"command": "cmd", "args": ["/c", "npx", "-y", "@luw-ai/mcp"]`.
 
+### Rhino 9: the AI panel
+
+Rhino 9's built-in AI panel (command `AI`) runs your own Claude Code or Codex. In its settings, **AI Settings → MCP Servers**, add the server by the name `luw` (the name of the sign-in you made in Claude Code):
+
+```json
+{
+  "mcpServers": {
+    "luw": { "type": "http", "url": "https://mcp.luw.ai/mcp" }
+  }
+}
+```
+
+Then ask: *"Render this viewport with Luw, golden hour. Capture the view, upload it with luw_create_upload and pass it to luw_render."* Rhino's panel approves every tool of a server you add, so a tool that uses credits runs without asking: say how many variations you want.
+
 ## What you can ask
 
 - *"Redesign this bedroom (`~/Downloads/bedroom.jpg`) as Mid-Century Modern, 3 variations."*
@@ -310,6 +324,7 @@ Tools with an `engine` setting run on Symphony, Luw.ai's higher-quality model, a
 | `luw_get_result` | Collect a long-running job (free) | 0 |
 | `luw_list_options` | Valid styles, room and building types, camera motions, materials (free) | 0 |
 | `luw_upload_file` | Upload a file to Luw.ai storage and get a URL (free) | 0 |
+| `luw_create_upload` | A link to send a picture that is only on the user's computer, e.g. a Rhino view (free, hosted server only) | 0 |
 | `luw_run_model` | Call any Luw.ai model with raw [API parameters](https://luw-ai.gitbook.io/api) (local server only) | varies |
 | `luw_personas` | Personas: reusable style identity, training images and slots (local server only) | 0 |
 | `luw_projects` | Projects (boards), folders and media (local server only; hosted: `luw://projects` resources) | 0 |
