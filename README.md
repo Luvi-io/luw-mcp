@@ -297,7 +297,7 @@ Then ask: *"Render this viewport with Luw, golden hour. Capture the view, upload
 
 Built-in prompts show up as slash commands or prompt templates in your client: `model`, `redesign_room`, `stage_empty_room`, `sketch_to_render`, `product_shot`.
 
-Tools with an `engine` setting run on Symphony, Luw.ai's higher-quality model, as the Luw.ai apps do; `luw_image_to_3d` runs on Aria and asks before using Symphony. Say "use Aria" (or run the `model` prompt, `/mcp__luw__model` in Claude Code) and the assistant keeps that model for the rest of the chat.
+Tools with an `engine` setting run on Symphony, Luw.ai's higher-quality model, as the Luw.ai apps do; `luw_image_to_3d` runs on Aria and asks before using Symphony, and `luw_vectorize_image` runs on Aria unless you ask for Symphony (2 credits instead of 1). Say "use Aria" (or run the `model` prompt, `/mcp__luw__model` in Claude Code) and the assistant keeps that model for the rest of the chat.
 
 ## Tools
 
@@ -313,7 +313,7 @@ Tools with an `engine` setting run on Symphony, Luw.ai's higher-quality model, a
 | `luw_upscale_image` | Enhance and enlarge 2/3/4× (8× gives 4×) | 1 |
 | `luw_expand_image` | Outpaint a cropped photo to a wider view | 1 |
 | `luw_remove_furniture` | Empty a furnished room | 1 |
-| `luw_vectorize_image` | Photo or drawing to SVG | 1 |
+| `luw_vectorize_image` | Photo or drawing to SVG | 1 (2 with Symphony) |
 | `luw_background` | Remove a background, or replace it with a generated scene | 1 |
 | `luw_segment` | Object masks (all objects, or by prompt) as image URLs | 1 |
 | `luw_generate_image` | Text to image (Fluw), or `format: "svg"` for vectors | 2 |

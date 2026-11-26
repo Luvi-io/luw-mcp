@@ -15,7 +15,7 @@
     "url": "https://github.com/Luvi-io/luw-mcp",
     "source": "github"
   },
-  "version": "0.3.21",
+  "version": "0.3.22",
   "remotes": [
     {
       "type": "streamable-http",

@@ -301,11 +301,13 @@ describe("generation", () => {
       "luw_interior_design",
       "luw_magic_wand",
       "luw_sketch_to_render",
+      "luw_vectorize_image",
     ]);
     for (const t of withEngine) {
       const engine = (t.inputSchema.properties as any).engine;
       expect(engine.enum).toEqual(["aria", "symphony"]);
-      expect(engine.default).toBe(t.name === "luw_image_to_3d" ? "aria" : "symphony");
+      // Aria where Symphony costs more than Aria and the luw.ai form opens on Aria.
+      expect(engine.default).toBe(["luw_image_to_3d", "luw_vectorize_image"].includes(t.name) ? "aria" : "symphony");
       expect(t.inputSchema.required ?? []).not.toContain("engine");
     }
   });
@@ -351,6 +353,19 @@ describe("generation", () => {
     expect(JSON.stringify(tool)).not.toMatch(/banana/);
     await call("luw_edit_image", { image: "https://e.com/a.jpg", prompt: "x", engine: "nano-banana-2" });
     expect(luw.generates()[0]!.json.luwmodel).toBe("symphony-3");
+  });
+
+  it("runs Vector AI on Aria unless Symphony is asked for", async () => {
+    const luw = fakeLuw().on("POST", "/generate", () => ({ status: true, output: "https://cdn.test/x.svg" }));
+    const { call } = await connect(luw.fetch);
+    await call("luw_vectorize_image", { image: "https://e.com/c.jpg" });
+    await call("luw_vectorize_image", { image: "https://e.com/c.jpg", engine: "aria" });
+    await call("luw_vectorize_image", { image: "https://e.com/c.jpg", engine: "symphony" });
+    expect(luw.generates().map((g) => g.json)).toEqual([
+      { model: "vector", image: "https://e.com/c.jpg" },
+      { model: "vector", image: "https://e.com/c.jpg" },
+      { model: "vector", image: "https://e.com/c.jpg", luwmodel: "symphony-3" },
+    ]);
   });
 
   it("sends 3DGen reflections on either engine", async () => {

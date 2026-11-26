@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.3.22
+
+- `luw_vectorize_image` takes `engine`: `aria` (the default, 1 credit, the Vector AI it always was) or `symphony` (2 credits: a larger line drawing and a finer vectorizer, which keeps close lines apart and small text legible). Symphony sends `luwmodel=symphony-3`, as on the other tools; left out, the request is the same as before.
+
 - Luw Studio inside the conversation (hosted server, on `/studio`): `luw_studio_open` shows one of the user's projects as the live editor in the host's view (ChatGPT, Claude), where the scene tools' changes appear within a few seconds and the user edits by hand; `luw_studio_show_shared` shows a shared project's 3D page from its link. The view signs Studio in with an hour's session Luw.ai makes from the user's API key (`luw_studio_session`, a tool for the view alone, hidden from the model). In a host whose view Studio's frame mode doesn't take (today any but ChatGPT), the view shows the project's picture and the Open in Luw Studio button. `LUW_STUDIO_VIEW=0` turns it off; `preview` keeps `/studio-preview`, the endpoint it was first tried from, serving it too.
 
 - `luw_create_upload` (hosted server only): a temporary signed PUT link and the final URL for a picture that is only on the user's computer, such as a view captured in Rhino's AI panel, whose assistant can run code there but can't hand the bytes to a tool. The assistant PUTs the file, then passes the final URL as `image`. Luw.ai checks the picture on its first use (`GET /finalize_upload`, as for every other upload), so one that was never sent or is refused uses no credits. The name in the link carries `x12tmp-…-put-…`, which marks it for that check.

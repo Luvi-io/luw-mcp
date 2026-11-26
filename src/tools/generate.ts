@@ -484,11 +484,22 @@ export function registerGenerateTools(server: Server, deps: Deps) {
     "luw_vectorize_image",
     {
       title: "Convert an image to SVG",
-      description: "Luw.ai Vector AI: convert a photo or drawing into a clean SVG vector. Costs 1 credit.",
-      inputSchema: { image: imageInput("Photo or drawing to vectorize") },
+      description:
+        "Luw.ai Vector AI: convert a photo or drawing into a clean SVG vector. Costs 1 credit (aria, the default) or 2 (symphony, which keeps finer lines and small details).",
+      inputSchema: {
+        image: imageInput("Photo or drawing to vectorize"),
+        // Aria here, as the luw.ai form opens: Symphony costs 2 credits instead of 1 (longcake COST_EXTRAS["vector"]).
+        engine: engineField(
+          "aria",
+          "Luw.ai model: aria (the default, 1 credit) or symphony (2 credits; a larger line drawing and a finer vectorizer, for facades and other detailed subjects). " +
+            "Use symphony when the user chose it in this conversation or asks for more detail.",
+        ),
+      },
       annotations: { title: "Vectorize image", ...GENERATE },
     },
-    handler(deps, async (a, ctx) => generate(ctx, "Vector AI", { model: "vector", image: await ctx.files.resolve(a.image, { signal: ctx.signal }) })),
+    handler(deps, async (a, ctx) =>
+      generate(ctx, "Vector AI", { model: "vector", image: await ctx.files.resolve(a.image, { signal: ctx.signal }), ...common({ engine: a.engine }) }),
+    ),
   );
 
   server.registerTool(
