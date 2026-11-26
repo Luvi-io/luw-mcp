@@ -29,8 +29,8 @@ describe("Luw Studio view", () => {
 
     const result = await call("luw_studio_open", { project_id: "luw-42" });
     expect(result.structuredContent).toEqual({ project_id: 42, name: "Lake house", cover: "https://i.luvicdn.com/c.jpg", studio_url: "https://studio.luw.ai/?project=42" });
-    expect(textOf(result)).toContain('"Lake house" open in Luw Studio');
-    expect(textOf(result)).toContain("don't open the project again");
+    expect(textOf(result)).toContain('"Lake house" is in the Luw Studio view above');
+    expect(textOf(result)).toContain("Don't open the project again");
     // The view reads the result's age from here, to open resting when the conversation is read back.
     expect(Math.abs(Date.now() - Number(result._meta?.["luw/shownAt"]))).toBeLessThan(60_000);
   });
@@ -131,6 +131,9 @@ describe("Luw Studio view", () => {
     expect(script).toContain("frame.contentWindow.postMessage(message, STUDIO)");
     expect(script).toContain('message.source = "luw-archigpt"');
     expect(script).toContain('"luw_studio_session"');
+    // The editor is tried only from the page Studio takes as a parent; elsewhere the view says where to open it.
+    expect(script).toContain('EDITOR_HOSTS.indexOf(location.origin) < 0');
+    expect(script).toContain('"https://mcp-luw-ai.web-sandbox.oaiusercontent.com"');
     expect(script).toContain("ui/request-display-mode");
     // One view at a time runs the live 3D; the others show the cover.
     expect(script).toContain('new BroadcastChannel("luw-studio-view")');

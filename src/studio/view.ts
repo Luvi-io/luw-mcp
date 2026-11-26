@@ -65,7 +65,7 @@ export function registerStudioView(server: Server, deps: Deps) {
     {
       title: "Open a Luw Studio project in the conversation",
       description:
-        "Opens one of the user's Luw Studio projects as the live 3D editor inside the conversation: the user sees it, turns it and edits it by hand, and every scene tool's change shows in it within a few seconds. Open a project once: the open editor follows the later edits by itself, so calling this again for the same project only opens a second editor.",
+        "Opens one of the user's Luw Studio projects as the live 3D editor inside the conversation (in ChatGPT; another app shows the project's picture with a button that opens it in Luw Studio): the user sees it, turns it and edits it by hand, and every scene tool's change shows in it within a few seconds. Open a project once: the open editor follows the later edits by itself, so calling this again for the same project only opens a second editor.",
       inputSchema: { project_id: projectId.describe("The project (luw_studio_list_projects, or one just created).") },
       annotations: { title: "Open project", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       _meta: {
@@ -81,8 +81,8 @@ export function registerStudioView(server: Server, deps: Deps) {
           {
             type: "text",
             text:
-              `The user now sees "${project.name}" open in Luw Studio in the view above and can edit it there by hand. ` +
-              "What the scene tools change shows in it by itself within a few seconds: don't open the project again, and reply in text only, with no image or link for it.",
+              `"${project.name}" is in the Luw Studio view above: in ChatGPT the live editor, where the user edits by hand and what the scene tools change shows by itself within a few seconds; in an app that can't hold the editor, the project's picture with a button that opens it in Luw Studio. ` +
+              "Don't open the project again, and reply in text only, with no image or link for it.",
           },
         ],
         structuredContent: { project_id: project.project_id, name: project.name, ...(project.cover ? { cover: project.cover } : {}), studio_url: project.studio_url },
@@ -268,6 +268,11 @@ body { margin: 0; color: var(--fg); background: transparent; }
   // frame mode names them) shows a refused or silent frame: after this long without a word, say so.
   var READY_WITHIN = 30000;
   var readyTimer = null;
+  // The pages Studio's frame mode takes as a parent (luw/frame/parents.ts in the Studio repo): ChatGPT's
+  // address for this server's views. A host that serves the view from anywhere else gets the project's
+  // cover and the way to Luw Studio at once, without the wait.
+  var EDITOR_HOSTS = ["https://mcp-luw-ai.web-sandbox.oaiusercontent.com"];
+  var NOT_HERE = "The live editor opens inside ChatGPT for now. Here, open the project in Luw Studio with the button below.";
 
   try {
     channel = new BroadcastChannel("luw-studio-view");
@@ -337,6 +342,11 @@ body { margin: 0; color: var(--fg); background: transparent; }
     problem = "";
     if (channel) channel.postMessage({ awake: me });
     if (!shown || !shown.projectId) return render();
+    if (EDITOR_HOSTS.indexOf(location.origin) < 0) {
+      awake = false;
+      problem = NOT_HERE;
+      return render();
+    }
     // The editor signs in first: its frame opens once the session is here.
     session = null;
     render();
@@ -430,7 +440,7 @@ body { margin: 0; color: var(--fg); background: transparent; }
         shown.cover ? el("img", { src: shown.cover, alt: "" }) : null,
         el("div", { class: "over" }, [
           problem ? el("div", { class: "why", text: problem }) : null,
-          el("button", { class: "wake", text: problem ? "Try again" : shown.projectId ? "Open the editor" : "Open in 3D" }),
+          problem === NOT_HERE ? null : el("button", { class: "wake", text: problem ? "Try again" : shown.projectId ? "Open the editor" : "Open in 3D" }),
         ]),
       ]);
     }
