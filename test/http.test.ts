@@ -95,3 +95,50 @@ describe("Vercel function (api/mcp.ts)", () => {
     await client.close();
   });
 });
+
+describe("the Studio view's preview endpoint", () => {
+  const VIEW_TOOLS = ["luw_studio_open", "luw_studio_session", "luw_studio_show_shared"];
+  const handler = (env: Record<string, string>) => createFetchHandler(loadConfig(env, { baseUrl: API, mode: "remote", inlineImages: false }), fakeLuw().fetch);
+  const viewTools = async (handle: (r: Request) => Promise<Response>, path: string) => {
+    const client = await connectHttp(handle, { Authorization: "Bearer user-key-123" }, path);
+    const names = (await client.listTools()).tools.map((t) => t.name);
+    await client.close();
+    return names.filter((n) => VIEW_TOOLS.includes(n)).sort();
+  };
+
+  it("doesn't exist until LUW_STUDIO_VIEW asks for it, and /studio has no view", async () => {
+    const handle = handler({});
+    const response = await handle(new Request("http://mcp.test/studio-preview", { method: "POST", headers: { Authorization: "Bearer k" }, body: "{}" }));
+    expect(response.status).toBe(404);
+    expect(await viewTools(handle, "/studio")).toEqual([]);
+  });
+
+  it("LUW_STUDIO_VIEW=preview: the view at /studio-preview only, /studio as it was", async () => {
+    const handle = handler({ LUW_STUDIO_VIEW: "preview" });
+    expect(await viewTools(handle, "/studio-preview")).toEqual([...VIEW_TOOLS].sort());
+    expect(await viewTools(handle, "/studio")).toEqual([]);
+    expect(await viewTools(handle, "/mcp")).toEqual([]);
+  });
+
+  it("LUW_STUDIO_VIEW=1: the view at /studio, and no preview endpoint", async () => {
+    const handle = handler({ LUW_STUDIO_VIEW: "1" });
+    expect(await viewTools(handle, "/studio")).toEqual([...VIEW_TOOLS].sort());
+    expect(await viewTools(handle, "/mcp")).toEqual([]);
+    const response = await handle(new Request("http://mcp.test/studio-preview", { method: "POST", headers: { Authorization: "Bearer k" }, body: "{}" }));
+    expect(response.status).toBe(404);
+  });
+
+  it("signs in like /studio, as a resource of its own", async () => {
+    const handle = handler({ LUW_STUDIO_VIEW: "preview", LUW_MCP_OAUTH_SECRET: "x".repeat(40) });
+    const refused = await handle(new Request("http://mcp.test/studio-preview", { method: "POST", body: "{}" }));
+    expect(refused.status).toBe(401);
+    expect(refused.headers.get("www-authenticate")).toContain('resource_metadata="http://mcp.test/.well-known/oauth-protected-resource/studio-preview"');
+    const meta = await handle(new Request("http://mcp.test/.well-known/oauth-protected-resource/studio-preview"));
+    expect(((await meta.json()) as { resource: string }).resource).toBe("http://mcp.test/studio-preview");
+    // /studio's own answers are unchanged.
+    const studio = await handle(new Request("http://mcp.test/studio", { method: "POST", body: "{}" }));
+    expect(studio.headers.get("www-authenticate")).toContain('resource_metadata="http://mcp.test/.well-known/oauth-protected-resource/studio"');
+    const mcp = await handle(new Request("http://mcp.test/mcp", { method: "POST", body: "{}" }));
+    expect(mcp.headers.get("www-authenticate")).toContain('resource_metadata="http://mcp.test/.well-known/oauth-protected-resource/mcp"');
+  });
+});

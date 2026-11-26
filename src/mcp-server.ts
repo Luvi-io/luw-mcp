@@ -12,6 +12,7 @@ import { registerGenerateTools } from "./tools/generate.js";
 import { registerPersonaTool, registerProjectTool, registerTeamTool } from "./tools/workspace.js";
 import { listToolsForChatGpt } from "./schema-compat.js";
 import { registerStudioTools, STUDIO_GUIDE_URI } from "./studio/tools.js";
+import { registerStudioView } from "./studio/view.js";
 import { registerResultViewer, withResultViewer } from "./widget.js";
 
 function instructions(config: LuwConfig): string {
@@ -30,12 +31,18 @@ function instructions(config: LuwConfig): string {
     ...(config.toolsets.has("studio")
       ? [
           `Luw Studio (3D building design): luw_studio_list_projects finds the user's projects; every scene tool takes a project_id and saves its change to that project, which an open Studio tab shows. Read ${STUDIO_GUIDE_URI} before building.`,
+          ...(studioView(config)
+            ? ["luw_studio_open shows a project as the live editor inside the conversation, where the user watches the scene tools' changes arrive and edits by hand. Open the project being worked on once, a new one right after creating it."]
+            : []),
         ]
       : []),
     // Hosted clients sign in to Luw.ai instead of handling keys.
     ...(local ? [`Without an API key, calls fail with setup steps; keys are created at ${API_KEY_URL}.`] : []),
   ].join("\n");
 }
+
+/** Luw Studio as a view inside the conversation: the hosted server's, once LUW_STUDIO_VIEW turns it on. */
+const studioView = (config: LuwConfig) => config.mode === "remote" && config.studioView && config.toolsets.has("studio");
 
 /** Builds a fully configured Luw.ai MCP server (one per stdio process, or one per hosted HTTP request). */
 export function createLuwServer(config: LuwConfig, fetchImpl?: typeof fetch): McpServer {
@@ -82,6 +89,7 @@ export function createLuwServer(config: LuwConfig, fetchImpl?: typeof fetch): Mc
   if (sets.has("studio")) registerStudioTools(server, deps);
   if (sets.has("generate")) registerPrompts(server);
   if (!local && sets.has("generate")) registerResultViewer(server);
+  if (studioView(config)) registerStudioView(server, deps);
   registerResources(server, deps, { instructions: instructions(config), tools });
   listToolsForChatGpt(server);
   answerInLuwName(server);

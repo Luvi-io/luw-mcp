@@ -1,4 +1,4 @@
-// Vercel Function for the hosted endpoint (https://mcp.luw.ai). vercel.json rewrites /mcp, /studio, /health,
+// Vercel Function for the hosted endpoint (https://mcp.luw.ai). vercel.json rewrites /mcp, /studio, /studio-preview, /health,
 // / and the OAuth routes here; `route` says which, and the shared fetch handler serves it exactly
 // like `--http` does.
 import { loadConfig } from "../src/config.js";
@@ -13,6 +13,9 @@ const PATHS: Record<string, string> = {
   "oauth-protected-resource-mcp": "/.well-known/oauth-protected-resource/mcp",
   "oauth-protected-resource-studio": "/.well-known/oauth-protected-resource/studio",
   studio: "/studio",
+  // Served only while LUW_STUDIO_VIEW=preview (http.ts); 404 otherwise.
+  "studio-preview": "/studio-preview",
+  "oauth-protected-resource-studio-preview": "/.well-known/oauth-protected-resource/studio-preview",
   "oauth-authorization-server": "/.well-known/oauth-authorization-server",
   register: "/register",
   authorize: "/authorize",

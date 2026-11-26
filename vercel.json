@@ -9,10 +9,12 @@
   "rewrites": [
     { "source": "/mcp", "destination": "/api/mcp" },
     { "source": "/studio", "destination": "/api/mcp?route=studio" },
+    { "source": "/studio-preview", "destination": "/api/mcp?route=studio-preview" },
     { "source": "/health", "destination": "/api/mcp?route=health" },
     { "source": "/.well-known/oauth-protected-resource", "destination": "/api/mcp?route=oauth-protected-resource" },
     { "source": "/.well-known/oauth-protected-resource/mcp", "destination": "/api/mcp?route=oauth-protected-resource-mcp" },
     { "source": "/.well-known/oauth-protected-resource/studio", "destination": "/api/mcp?route=oauth-protected-resource-studio" },
+    { "source": "/.well-known/oauth-protected-resource/studio-preview", "destination": "/api/mcp?route=oauth-protected-resource-studio-preview" },
     { "source": "/.well-known/oauth-authorization-server", "destination": "/api/mcp?route=oauth-authorization-server" },
     { "source": "/register", "destination": "/api/mcp?route=register" },
     { "source": "/authorize", "destination": "/api/mcp?route=authorize" },

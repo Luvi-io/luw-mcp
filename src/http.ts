@@ -4,7 +4,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { LATEST_PROTOCOL_VERSION, SUPPORTED_PROTOCOL_VERSIONS } from "@modelcontextprotocol/sdk/types.js";
 import { DOCS_URL, VERSION, type LuwConfig } from "./config.js";
 import { createLuwServer } from "./mcp-server.js";
-import { createOAuth } from "./oauth.js";
+import { createOAuth, STUDIO_PREVIEW_PATH } from "./oauth.js";
 
 // Node 18 has no global Web Crypto; the SDK's web-standard transport calls crypto.randomUUID().
 if (!globalThis.crypto) (globalThis as { crypto?: unknown }).crypto = webcrypto;
@@ -52,8 +52,11 @@ export function createFetchHandler(baseConfig: LuwConfig, fetchImpl?: typeof fet
         api_docs: DOCS_URL,
       });
     }
-    // /studio: the same server with the Luw Studio project tools added.
-    if (url.pathname !== "/mcp" && url.pathname !== "/studio") return jsonResponse({ error: "not_found" }, 404);
+    // /studio: the same server with the Luw Studio project tools added. /studio-preview, while the Studio view
+    // is being tried (LUW_STUDIO_VIEW=preview): /studio with the view, for a connection of its own.
+    const preview = baseConfig.studioViewPreview && url.pathname === STUDIO_PREVIEW_PATH;
+    const studio = url.pathname === "/studio" || preview;
+    if (url.pathname !== "/mcp" && !studio) return jsonResponse({ error: "not_found" }, 404);
     if (request.method !== "POST") {
       // Stateless server: no standalone SSE stream (GET) and no sessions to delete (DELETE).
       return withCors(new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers: { Allow: "POST, OPTIONS", "Content-Type": "application/json" } }));
@@ -62,8 +65,9 @@ export function createFetchHandler(baseConfig: LuwConfig, fetchImpl?: typeof fet
     const apiKey = apiKeyFrom(request, url);
     if (!apiKey && oauth) return withCors(oauth.unauthorized(url));
     const authChallenge = oauth?.rejectedKeyChallenge(url);
-    const toolsets = url.pathname === "/studio" ? new Set([...baseConfig.toolsets, "studio" as const]) : baseConfig.toolsets;
-    const server = createLuwServer({ ...baseConfig, apiKey, mode: "remote", authChallenge, toolsets }, fetchImpl);
+    const toolsets = studio ? new Set([...baseConfig.toolsets, "studio" as const]) : baseConfig.toolsets;
+    const studioView = baseConfig.studioView || preview;
+    const server = createLuwServer({ ...baseConfig, apiKey, mode: "remote", authChallenge, toolsets, studioView }, fetchImpl);
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       maxRequestBodySize: MAX_BODY_BYTES,

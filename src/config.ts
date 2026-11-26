@@ -41,6 +41,13 @@ export interface LuwConfig {
   openaiAppsChallenge?: string;
   /** Where the studio tools read Luw Studio's item catalog; empty uses the built-in list. */
   studioCatalogUrl: string;
+  /** Hosted mode: Luw Studio as a view inside the conversation (studio/view.ts). Off until LUW_STUDIO_VIEW turns it on. */
+  studioView: boolean;
+  /**
+   * Hosted mode, LUW_STUDIO_VIEW=preview: the view is on at /studio-preview only, a second Studio endpoint
+   * to try it from, and /studio lists the tools it always did.
+   */
+  studioViewPreview: boolean;
 }
 
 type Env = Record<string, string | undefined>;
@@ -61,6 +68,8 @@ export function loadConfig(rawEnv: Env = process.env, overrides: Partial<LuwConf
     oauthConnectUrl: env.LUW_MCP_CONNECT_URL?.trim() || CONNECT_URL,
     openaiAppsChallenge: env.OPENAI_APPS_CHALLENGE?.trim() || undefined,
     studioCatalogUrl: env.LUW_STUDIO_CATALOG_URL === undefined ? STUDIO_CATALOG_URL : env.LUW_STUDIO_CATALOG_URL.trim(),
+    studioView: !previewOnly(env.LUW_STUDIO_VIEW) && parseBool(env.LUW_STUDIO_VIEW, false),
+    studioViewPreview: previewOnly(env.LUW_STUDIO_VIEW),
     ...overrides,
   };
 }
@@ -96,6 +105,8 @@ function realKey(value: string | undefined): string {
 function withoutPlaceholders(env: Env): Env {
   return Object.fromEntries(Object.entries(env).filter(([, v]) => v === undefined || !/^\$\{[^}]+\}$/.test(v.trim())));
 }
+
+const previewOnly = (value: string | undefined) => value?.trim().toLowerCase() === "preview";
 
 function parseBool(value: string | undefined, fallback: boolean): boolean {
   if (value === undefined || value.trim() === "") return fallback;

@@ -109,6 +109,13 @@ export async function listProjects(ctx: ToolContext, page: number, limit: number
   return { page, projects: matches.slice(start, start + limit).map(summary), has_more: start + limit < matches.length };
 }
 
+/** One project's name, cover and link, as the list gives them. */
+export async function describeProject(ctx: ToolContext, projectId: number) {
+  const body = await ctx.client.request<{ persona?: Persona }>("GET", `/personas/${projectId}`, { signal: ctx.signal, timeoutMs: 120_000 });
+  if (body.persona?.profession !== PROFESSION) throw new InputError(`No Luw Studio project ${projectId} in this account. luw_studio_list_projects lists them.`);
+  return summary(body.persona);
+}
+
 export async function loadProject(ctx: ToolContext, projectId: number): Promise<StudioProject> {
   const body = await ctx.client.request<{ persona?: Persona }>("GET", `/personas/${projectId}`, {
     signal: ctx.signal,

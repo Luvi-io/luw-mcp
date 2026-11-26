@@ -31,7 +31,7 @@ import {
 export const STUDIO_GUIDE_URI = "luw://studio/guide";
 const DESIGN_SCHEMA_URI = "luw://studio/design-schema";
 
-function projectNumber(value: unknown): number {
+export function projectNumber(value: unknown): number {
   const id = typeof value === "number" ? value : Number(String(value).replace(/^luw-/, ""));
   if (!Number.isInteger(id) || id <= 0) throw new InputError("project_id is a project's number, e.g. 1252130 (or luw-1252130).");
   return id;

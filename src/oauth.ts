@@ -213,10 +213,12 @@ export function createOAuth(options: OAuthOptions) {
           ? json({ resource: `${url.origin}/mcp`, authorization_servers: [url.origin], bearer_methods_supported: ["header"], resource_name: "Luw.ai" })
           : null;
       }
-      // The Studio endpoint (/studio) is the same server with the studio tools added; same sign-in.
-      if (path === "/.well-known/oauth-protected-resource/studio") {
+      // The Studio endpoints (/studio, and /studio-preview while it is served) are the same server with the
+      // studio tools added; same sign-in.
+      const studio = STUDIO_PATHS.find((name) => path === `/.well-known/oauth-protected-resource${name}`);
+      if (studio) {
         return method === "GET"
-          ? json({ resource: `${url.origin}/studio`, authorization_servers: [url.origin], bearer_methods_supported: ["header"], resource_name: "Luw.ai Studio" })
+          ? json({ resource: `${url.origin}${studio}`, authorization_servers: [url.origin], bearer_methods_supported: ["header"], resource_name: "Luw.ai Studio" })
           : null;
       }
       if (path === "/.well-known/oauth-authorization-server") return method === "GET" ? json(metadata(url.origin)) : null;
@@ -242,9 +244,13 @@ export function createOAuth(options: OAuthOptions) {
 
 export type OAuth = ReturnType<typeof createOAuth>;
 
+/** /studio's twin while the Studio view is being tried (http.ts). */
+export const STUDIO_PREVIEW_PATH = "/studio-preview";
+const STUDIO_PATHS = ["/studio", STUDIO_PREVIEW_PATH];
+
 function challenge(url: URL, error?: string, description?: string): string {
-  const resource = url.pathname === "/studio" ? "studio" : "mcp";
-  const parts = [`resource_metadata="${url.origin}/.well-known/oauth-protected-resource/${resource}"`];
+  const resource = STUDIO_PATHS.includes(url.pathname) ? url.pathname : "/mcp";
+  const parts = [`resource_metadata="${url.origin}/.well-known/oauth-protected-resource${resource}"`];
   if (error) parts.push(`error="${error}"`);
   if (description) parts.push(`error_description="${description}"`);
   return `Bearer ${parts.join(", ")}`;

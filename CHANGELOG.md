@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Luw Studio inside the conversation (hosted server, off until `LUW_STUDIO_VIEW` is set): `luw_studio_open` shows one of the user's projects as the live editor in the host's view (ChatGPT, Claude), where the scene tools' changes appear within a few seconds and the user edits by hand; `luw_studio_show_shared` shows a shared project's 3D page from its link. The view signs Studio in with an hour's session Luw.ai makes from the user's API key (`luw_studio_session`, a tool for the view alone, hidden from the model). `LUW_STUDIO_VIEW=preview` serves all of it at `/studio-preview` only, so `/studio` lists what it always did; `1` puts it on `/studio`.
+
 - `luw_create_upload` (hosted server only): a temporary signed PUT link and the final URL for a picture that is only on the user's computer, such as a view captured in Rhino's AI panel, whose assistant can run code there but can't hand the bytes to a tool. The assistant PUTs the file, then passes the final URL as `image`. Luw.ai checks the picture on its first use (`GET /finalize_upload`, as for every other upload), so one that was never sent or is refused uses no credits. The name in the link carries `x12tmp-…-put-…`, which marks it for that check.
 
 - `luw_render`, `luw_interior_design` and `luw_exterior_design` take `resolution: "4k"`, as `luw_edit_image` does: it sends `uhd=1`, the 4K switch the luw.ai form offers on Render, Interior, Exterior and Magic Prompt. 4K costs one more credit per variation (2 instead of 1).
