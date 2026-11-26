@@ -106,23 +106,24 @@ describe("the Studio view's preview endpoint", () => {
     return names.filter((n) => VIEW_TOOLS.includes(n)).sort();
   };
 
-  it("doesn't exist until LUW_STUDIO_VIEW asks for it, and /studio has no view", async () => {
+  it("the view is on /studio, and the preview endpoint doesn't exist, with nothing set", async () => {
     const handle = handler({});
+    expect(await viewTools(handle, "/studio")).toEqual([...VIEW_TOOLS].sort());
+    expect(await viewTools(handle, "/mcp")).toEqual([]);
     const response = await handle(new Request("http://mcp.test/studio-preview", { method: "POST", headers: { Authorization: "Bearer k" }, body: "{}" }));
     expect(response.status).toBe(404);
-    expect(await viewTools(handle, "/studio")).toEqual([]);
   });
 
-  it("LUW_STUDIO_VIEW=preview: the view at /studio-preview only, /studio as it was", async () => {
+  it("LUW_STUDIO_VIEW=preview keeps /studio-preview serving it too", async () => {
     const handle = handler({ LUW_STUDIO_VIEW: "preview" });
     expect(await viewTools(handle, "/studio-preview")).toEqual([...VIEW_TOOLS].sort());
-    expect(await viewTools(handle, "/studio")).toEqual([]);
+    expect(await viewTools(handle, "/studio")).toEqual([...VIEW_TOOLS].sort());
     expect(await viewTools(handle, "/mcp")).toEqual([]);
   });
 
-  it("LUW_STUDIO_VIEW=1: the view at /studio, and no preview endpoint", async () => {
-    const handle = handler({ LUW_STUDIO_VIEW: "1" });
-    expect(await viewTools(handle, "/studio")).toEqual([...VIEW_TOOLS].sort());
+  it("LUW_STUDIO_VIEW=0 turns the view off", async () => {
+    const handle = handler({ LUW_STUDIO_VIEW: "0" });
+    expect(await viewTools(handle, "/studio")).toEqual([]);
     expect(await viewTools(handle, "/mcp")).toEqual([]);
     const response = await handle(new Request("http://mcp.test/studio-preview", { method: "POST", headers: { Authorization: "Bearer k" }, body: "{}" }));
     expect(response.status).toBe(404);

@@ -52,8 +52,8 @@ export function createFetchHandler(baseConfig: LuwConfig, fetchImpl?: typeof fet
         api_docs: DOCS_URL,
       });
     }
-    // /studio: the same server with the Luw Studio project tools added. /studio-preview, while the Studio view
-    // is being tried (LUW_STUDIO_VIEW=preview): /studio with the view, for a connection of its own.
+    // /studio: the same server with the Luw Studio project tools added. /studio-preview (LUW_STUDIO_VIEW=preview):
+    // the endpoint Studio's view was first tried from, kept for the connections made to it; the same as /studio.
     const preview = baseConfig.studioViewPreview && url.pathname === STUDIO_PREVIEW_PATH;
     const studio = url.pathname === "/studio" || preview;
     if (url.pathname !== "/mcp" && !studio) return jsonResponse({ error: "not_found" }, 404);
