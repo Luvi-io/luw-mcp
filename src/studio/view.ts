@@ -264,6 +264,10 @@ body { margin: 0; color: var(--fg); background: transparent; }
   // one a new session cures, so those asks are answered this far apart at most.
   var ASKED_APART = 60000;
   var askedAt = 0;
+  // Studio's editor says it is up within seconds. A host whose view Studio doesn't take as a parent (its
+  // frame mode names them) shows a refused or silent frame: after this long without a word, say so.
+  var READY_WITHIN = 30000;
+  var readyTimer = null;
 
   try {
     channel = new BroadcastChannel("luw-studio-view");
@@ -353,6 +357,15 @@ body { margin: 0; color: var(--fg); background: transparent; }
     if (!awake || mode === "fullscreen") return;
     awake = false;
     clearTimeout(renewTimer);
+    clearTimeout(readyTimer);
+    render();
+  }
+
+  function notReady() {
+    if (!awake || !shown || !shown.projectId) return;
+    awake = false;
+    clearTimeout(renewTimer);
+    problem = "Luw Studio can't open inside this app. Open it in Luw Studio with the button below.";
     render();
   }
 
@@ -427,6 +440,8 @@ body { margin: 0; color: var(--fg); background: transparent; }
     // Only Studio's own pages are ever framed: its share page, or its editor in frame mode.
     var src = shown.projectId ? STUDIO + "/?frame=1" : STUDIO + "/s/" + shown.token + "?embed=1&clean=1";
     frame = el("iframe", { src: src, title: shown.name, allow: "fullscreen; xr-spatial-tracking; clipboard-write", loading: "eager" });
+    clearTimeout(readyTimer);
+    if (shown.projectId) readyTimer = setTimeout(notReady, READY_WITHIN);
     return el("div", { class: "stage" }, [frame]);
   }
 
@@ -479,11 +494,13 @@ body { margin: 0; color: var(--fg); background: transparent; }
   function fromStudio(event) {
     var message = event.data;
     if (event.origin !== STUDIO || !message || message.source !== "luw-studio" || message.v !== 1) return;
+    if (message.type === "ready") clearTimeout(readyTimer);
     if (message.type === "ready" && session) toStudio({ type: "hello", session: session, projectId: shown.projectId });
     if (message.type === "expired" && Date.now() - askedAt > ASKED_APART) { askedAt = Date.now(); renew(); }
     if (message.type === "missing") {
       awake = false;
       clearTimeout(renewTimer);
+      clearTimeout(readyTimer);
       problem = "This project can't be opened here: it was deleted, or it is another account's.";
       render();
     }
