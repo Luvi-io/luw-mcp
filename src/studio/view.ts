@@ -342,7 +342,8 @@ body { margin: 0; color: var(--fg); background: transparent; }
     problem = "";
     if (channel) channel.postMessage({ awake: me });
     if (!shown || !shown.projectId) return render();
-    if (EDITOR_HOSTS.indexOf(location.origin) < 0) {
+    // self.origin, not location.origin: a host may write the view into a frame with no address of its own.
+    if (EDITOR_HOSTS.indexOf(self.origin || location.origin) < 0) {
       awake = false;
       problem = NOT_HERE;
       return render();

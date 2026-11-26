@@ -132,7 +132,7 @@ describe("Luw Studio view", () => {
     expect(script).toContain('message.source = "luw-archigpt"');
     expect(script).toContain('"luw_studio_session"');
     // The editor is tried only from the page Studio takes as a parent; elsewhere the view says where to open it.
-    expect(script).toContain('EDITOR_HOSTS.indexOf(location.origin) < 0');
+    expect(script).toContain('EDITOR_HOSTS.indexOf(self.origin || location.origin) < 0');
     expect(script).toContain('"https://mcp-luw-ai.web-sandbox.oaiusercontent.com"');
     expect(script).toContain("ui/request-display-mode");
     // One view at a time runs the live 3D; the others show the cover.
